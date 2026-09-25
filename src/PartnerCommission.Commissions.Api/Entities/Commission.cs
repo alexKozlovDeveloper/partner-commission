@@ -2,4 +2,5 @@
 
 public class Commission
 {
+    public Guid Id { get; set; }
 }
