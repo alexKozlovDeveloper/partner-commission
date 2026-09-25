@@ -33,10 +33,6 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = c => c.Tags.Contains("ready")
 });
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
