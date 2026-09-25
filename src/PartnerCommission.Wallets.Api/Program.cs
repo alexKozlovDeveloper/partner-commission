@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Wallets.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +14,13 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("Db")
     ?? throw new InvalidOperationException("Connection string 'Db' is not configured");
 
-builder.Services.AddHealthChecks().AddNpgSql(connectionString, tags: ["ready"]);
+builder.Services
+    .AddHealthChecks()
+    .AddNpgSql(connectionString, tags: ["ready"]);
+
+builder.Services.AddDbContext<WalletsDbContext>(options =>
+    options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
+    );
 
 var app = builder.Build();
 
