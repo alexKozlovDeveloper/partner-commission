@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Partners.Api", "src\PartnerCommission.Partners.Api\PartnerCommission.Partners.Api.csproj", "{73EFB505-6AC4-4D5A-97DB-F9531BF2A9C7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Partners.Api", "src\PartnerCommission.Partners.Api\PartnerCommission.Partners.Api.csproj", "{73EFB505-6AC4-4D5A-97DB-F9531BF2A9C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Commissions.Api", "src\PartnerCommission.Commissions.Api\PartnerCommission.Commissions.Api.csproj", "{153EAE27-61C0-45EE-B8C2-E769B76348F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Commissions.Api", "src\PartnerCommission.Commissions.Api\PartnerCommission.Commissions.Api.csproj", "{153EAE27-61C0-45EE-B8C2-E769B76348F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Wallets.Api", "src\PartnerCommission.Wallets.Api\PartnerCommission.Wallets.Api.csproj", "{3624E121-B8D0-4228-831F-99BEFDEDD5B1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{153EAE27-61C0-45EE-B8C2-E769B76348F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{153EAE27-61C0-45EE-B8C2-E769B76348F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{153EAE27-61C0-45EE-B8C2-E769B76348F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3624E121-B8D0-4228-831F-99BEFDEDD5B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3624E121-B8D0-4228-831F-99BEFDEDD5B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3624E121-B8D0-4228-831F-99BEFDEDD5B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3624E121-B8D0-4228-831F-99BEFDEDD5B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
