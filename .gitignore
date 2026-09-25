@@ -1,0 +1,55 @@
+# --- .NET build artifacts ----------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+publish/
+
+# --- IDE: Visual Studio ------------------------------------------------------
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# --- IDE: Rider / ReSharper --------------------------------------------------
+.idea/
+*.sln.iml
+_ReSharper*/
+*.DotSettings.user
+
+# --- IDE: VS Code ------------------------------------------------------------
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# --- Tests and coverage ------------------------------------------------------
+TestResults/
+[Cc]overage/
+*.trx
+*.coverage
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# --- NuGet -------------------------------------------------------------------
+*.nupkg
+*.snupkg
+# packages/ is only used by legacy packages.config; PackageReference keeps
+# everything in the global cache, but ignore the folder just in case
+packages/
+
+# --- Docker ------------------------------------------------------------------
+# local overrides are personal; the base docker-compose.yml IS committed!
+docker-compose.override.yml
+
+# --- Secrets and local settings ----------------------------------------------
+# env files with passwords never go to git; a template without secrets does
+.env
+.env.local
+!.env.example
+appsettings.*.local.json
+
+# --- OS / misc -----------------------------------------------------------------
+Thumbs.db
+.DS_Store
+*.log
