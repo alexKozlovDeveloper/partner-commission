@@ -1,6 +1,6 @@
 ﻿namespace PartnerCommission.Commissions.Domain;
 
-internal enum SchemaType
+public enum SchemaType
 {
     Linear = 1,
     Fibonacci = 2

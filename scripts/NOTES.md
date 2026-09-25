@@ -127,6 +127,32 @@ Undo the LAST migration if it is not applied to the database yet:
 dotnet ef migrations remove --project src/PartnerCommission.Partners.Api
 ```
 
+### Recreate a service database from scratch (dev-only!)
+
+After changing entities pre-release it is fine to rebuild the single Initial
+migration instead of stacking fixup migrations. Legal ONLY while nobody else
+has applied the schema and the data is disposable. Example for Commissions:
+
+```bash
+dotnet ef database drop --project src/PartnerCommission.Commissions.Api -f
+```
+
+```bash
+dotnet ef migrations remove --project src/PartnerCommission.Commissions.Api
+```
+
+```bash
+dotnet ef migrations add Initial --project src/PartnerCommission.Commissions.Api -o Data/Migrations
+```
+
+```bash
+dotnet ef database update --project src/PartnerCommission.Commissions.Api
+```
+
+Notes: other services' databases are untouched; review the regenerated
+migration (indexes, maxlength, precision); startup seeding (current_schema)
+re-inserts itself on the next run — that is what "insert if missing" is for.
+
 Apply migrations (creates the database itself if missing; re-running is a
 no-op):
 
