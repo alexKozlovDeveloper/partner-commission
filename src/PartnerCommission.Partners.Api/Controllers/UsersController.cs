@@ -15,7 +15,7 @@ public class UsersController(
     {
         _ = await userService.CreateAsync(request, ct);
 
-        return Created();
+        return Ok();
     }
 
     [HttpPut("{externalId}/partner")]

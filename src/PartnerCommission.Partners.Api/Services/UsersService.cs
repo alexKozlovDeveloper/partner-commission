@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;
@@ -11,7 +11,7 @@ public class UsersService(
 {
     public async Task<Guid> CreateAsync(CreateUserRequest createUserModel, CancellationToken ct)
     {
-        var user = new User 
+        var user = new User
         {
             Id = Guid.NewGuid(),
             ExternalId = createUserModel.ExternalId,

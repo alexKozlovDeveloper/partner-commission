@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Partners.Api.Data;
+using PartnerCommission.Partners.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ builder.Services
 builder.Services.AddDbContext<PartnersDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
     );
+
+builder.Services.AddScoped<IUserService, UsersService>();
 
 var app = builder.Build();
 
