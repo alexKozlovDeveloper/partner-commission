@@ -24,6 +24,7 @@ builder.Services.AddDbContext<CommissionsDbContext>(options =>
     );
 
 builder.Services.AddScoped<ICommissionsService, CommissionsService>();
+builder.Services.AddScoped<ICommissionSchemaSettings, CommissionSchemaSettings>();
 
 var app = builder.Build();
 
