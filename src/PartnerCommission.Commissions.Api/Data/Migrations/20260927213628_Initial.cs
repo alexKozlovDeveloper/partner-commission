@@ -66,6 +66,11 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     table.PrimaryKey("PK_settings", x => x.Key);
                 });
 
+            migrationBuilder.InsertData(
+                table: "settings",
+                columns: new[] { "Key", "Value" },
+                values: new object[] { "commission_schema", "Linear" });
+
             migrationBuilder.CreateIndex(
                 name: "IX_outbox_messages_ProcessedAtUtc_CreatedAtUtc",
                 table: "outbox_messages",

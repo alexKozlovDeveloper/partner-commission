@@ -10,7 +10,7 @@ public class CommissionsController(
     ICommissionsService commissionsService
     ) : ControllerBase
 {
-    [HttpPost("{externalId}/events")]
+    [HttpPost("{externalId}/profit-events")]
     public async Task<IActionResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
         await commissionsService.ReciveProfitEventAsync(externalId, request, ct);

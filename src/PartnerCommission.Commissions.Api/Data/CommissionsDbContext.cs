@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Domain;
 
 namespace PartnerCommission.Commissions.Api.Data;
 
@@ -39,6 +40,12 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
 
             e.Property(x => x.Key).HasMaxLength(64);
             e.Property(x => x.Value).HasMaxLength(64);
+
+            e.HasData(new Setting
+            {
+                Key = SettingKeys.CommissionSchema,
+                Value = nameof(SchemaType.Linear)
+            });
         });
 
         modelBuilder.Entity<Commission>(e =>
