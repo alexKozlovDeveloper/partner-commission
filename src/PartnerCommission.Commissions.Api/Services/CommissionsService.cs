@@ -16,11 +16,14 @@ public class CommissionsService(
         var profitEvent = new ProfitEvent
         {
             Id = Guid.NewGuid(),
+            Status = ProfitEventStatus.Received,
             UserExternalId = externalId,
             EventExternalId = request.EventExternalId,
             Profit = request.Profit,
             SchemaType = currentSchemaType,
-            CreatedAtUtc = DateTime.UtcNow,            
+            CreatedAtUtc = DateTime.UtcNow,
+            Attempts = 0,
+            NextAttemptAtUtc = DateTime.UtcNow            
         };
 
         commissionsDbContext.ProfitEvents.Add(profitEvent);
