@@ -13,9 +13,18 @@ public class UsersController(
     [HttpPost]
     public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken ct) 
     {
-        _ = await userService.CreateAsync(request, ct);
+        var id = await userService.CreateAsync(request, ct);
 
-        return Ok();
+        //return Created($"/users/{request.ExternalId}", new { id, request.ExternalId });
+        return Created();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ListUsersAsync(CancellationToken ct)
+    {
+        var users = await userService.ListAsync(ct);
+
+        return Ok(users);
     }
 
     [HttpPut("{externalId}/partner")]
@@ -26,19 +35,19 @@ public class UsersController(
         return NoContent();
     }
 
-    [HttpGet("{externalId}/tree/up")]
-    public async Task<TreeUpResponse> GetTreeUpAsync(string externalId, CancellationToken ct) 
+    [HttpDelete("{externalId}/partner")]
+    public async Task<IActionResult> DeletePartnerAsync(string externalId, CancellationToken ct)
     {
-        var result = await userService.GetTreeUpAsync(externalId, ct);
+        await userService.DeletePartnerAsync(externalId, ct);
 
-        return result;
+        return NoContent();
     }
 
-    [HttpGet("{externalId}/tree/down")]
-    public async Task<TreeDownResponse> GetTreeDownAsync(string externalId, CancellationToken ct)
+    [HttpGet("{externalId}/tree")]
+    public async Task<IActionResult> GetPartnersTreeAsync(string externalId, CancellationToken ct)
     {
-        var result = await userService.GetTreeDownAsync(externalId, ct);
+        var result = await userService.GetPartnersTreeAsync(externalId, ct);
 
-        return result;
+        return Ok(result);
     }
 }
