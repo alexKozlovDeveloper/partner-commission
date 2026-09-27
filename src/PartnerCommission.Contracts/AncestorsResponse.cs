@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Partners.Api.Contracts;
+﻿namespace PartnerCommission.Contracts;
 
 public sealed record AncestorsResponse(
     string ExternalId,

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;

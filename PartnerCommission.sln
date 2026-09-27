@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Commissio
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Shared", "src\PartnerCommission.Shared\PartnerCommission.Shared.csproj", "{ACB748DC-9357-4CAA-8E78-513CCFFC4268}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Contracts", "src\PartnerCommission.Contracts\PartnerCommission.Contracts.csproj", "{B49AF451-7D86-4EB0-81F6-09AEAB765888}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B49AF451-7D86-4EB0-81F6-09AEAB765888}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B49AF451-7D86-4EB0-81F6-09AEAB765888}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B49AF451-7D86-4EB0-81F6-09AEAB765888}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B49AF451-7D86-4EB0-81F6-09AEAB765888}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

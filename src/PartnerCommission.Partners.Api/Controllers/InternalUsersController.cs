@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Services;
 

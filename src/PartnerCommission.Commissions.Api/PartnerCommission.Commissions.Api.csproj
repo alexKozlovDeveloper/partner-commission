@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PartnerCommission.Commissions.Domain\PartnerCommission.Commissions.Domain.csproj" />
+    <ProjectReference Include="..\PartnerCommission.Contracts\PartnerCommission.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

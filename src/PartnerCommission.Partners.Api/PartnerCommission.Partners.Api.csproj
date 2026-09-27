@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\PartnerCommission.Contracts\PartnerCommission.Contracts.csproj" />
     <ProjectReference Include="..\PartnerCommission.Shared\PartnerCommission.Shared.csproj" />
   </ItemGroup>
 
