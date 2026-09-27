@@ -1,6 +1,6 @@
 ﻿namespace PartnerCommission.Commissions.Domain;
 
-internal class LinearSchema : ICommissionSchema
+public class LinearSchema : ICommissionSchema
 {
     public SchemaType Type => SchemaType.Linear;
 
