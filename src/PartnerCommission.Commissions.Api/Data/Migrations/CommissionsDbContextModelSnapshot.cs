@@ -28,6 +28,26 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("BeneficiaryExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProfitEventId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SchemaType")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.ToTable("commissions", (string)null);
@@ -67,6 +87,9 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -74,6 +97,15 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ProcessedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("Profit")
                         .HasPrecision(18, 4)

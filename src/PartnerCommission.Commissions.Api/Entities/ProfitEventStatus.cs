@@ -3,7 +3,6 @@
 public enum ProfitEventStatus
 {
     Received = 0,
-    Processing = 1,
-    Processed = 2,
-    Unresolved = 3
+    Processed = 1,
+    Unresolved = 2
 }

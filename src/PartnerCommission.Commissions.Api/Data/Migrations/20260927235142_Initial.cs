@@ -15,7 +15,13 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 name: "commissions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfitEventId = table.Column<string>(type: "text", nullable: false),
+                    BeneficiaryExternalId = table.Column<string>(type: "text", nullable: false),
+                    Level = table.Column<int>(type: "integer", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    SchemaType = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -42,12 +48,16 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     EventExternalId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     UserExternalId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Profit = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
                     SchemaType = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Attempts = table.Column<int>(type: "integer", nullable: false),
+                    NextAttemptAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ProcessedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LastError = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
