@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Partners.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Commissions.Api", "src\PartnerCommission.Commissions.Api\PartnerCommission.Commissions.Api.csproj", "{153EAE27-61C0-45EE-B8C2-E769B76348F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Wallets.Api", "src\PartnerCommission.Wallets.Api\PartnerCommission.Wallets.Api.csproj", "{3624E121-B8D0-4228-831F-99BEFDEDD5B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Wallets.Api", "src\PartnerCommission.Wallets.Api\PartnerCommission.Wallets.Api.csproj", "{3624E121-B8D0-4228-831F-99BEFDEDD5B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Commissions.Domain", "src\PartnerCommission.Commissions.Domain\PartnerCommission.Commissions.Domain.csproj", "{05AE962C-C3AA-4C68-B860-351E27D617A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Commissions.Domain", "src\PartnerCommission.Commissions.Domain\PartnerCommission.Commissions.Domain.csproj", "{05AE962C-C3AA-4C68-B860-351E27D617A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Shared", "src\PartnerCommission.Shared\PartnerCommission.Shared.csproj", "{ACB748DC-9357-4CAA-8E78-513CCFFC4268}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{05AE962C-C3AA-4C68-B860-351E27D617A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05AE962C-C3AA-4C68-B860-351E27D617A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05AE962C-C3AA-4C68-B860-351E27D617A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACB748DC-9357-4CAA-8E78-513CCFFC4268}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
