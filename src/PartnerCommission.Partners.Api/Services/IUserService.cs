@@ -11,4 +11,7 @@ public interface IUserService
     Task DeletePartnerAsync(string externalId, CancellationToken ct);
 
     Task<PartnersTreeResponse> GetPartnersTreeAsync(string externalId, CancellationToken ct);
+
+    //internal
+    Task<AncestorsResponse> GetAncestorsAsync(string externalId, CancellationToken ct);
 }

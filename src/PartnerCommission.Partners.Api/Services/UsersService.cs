@@ -126,4 +126,33 @@ public class UsersService(
 
         return descendants;
     }
+
+    public async Task<AncestorsResponse> GetAncestorsAsync(string externalId, CancellationToken ct) 
+    {
+        // TODO: stub, must be rework (bad optimization for now)
+
+        var user = await dbContext.Users
+            .Where(x => x.ExternalId == externalId)
+            .FirstOrDefaultAsync(ct) ?? throw new NotFoundException(nameof(User), externalId);
+
+        var ancestors = new List<AncestorItem>();
+                
+        Guid? ancestorId = user.ParentId;
+        var level = 1;
+        while (ancestorId != null)
+        {
+            var ancestor = await dbContext.Users
+                .Where(x => x.Id == ancestorId)
+                .FirstAsync(ct);
+
+            ancestors.Add(new AncestorItem(ancestor.ExternalId, level));
+
+            ancestorId = ancestor.ParentId;
+            level++;
+        }
+
+        var result = new AncestorsResponse(externalId, ancestors);
+
+        return result;
+    }
 }
