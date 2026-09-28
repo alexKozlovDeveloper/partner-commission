@@ -1,0 +1,21 @@
+# Контекст сборки — корень репозитория (сервисы ссылаются на Shared/Contracts/Domain).
+# Всё лишнее исключаем, чтобы в контекст не уезжали сотни мегабайт bin/obj и локальные dll.
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/*.user
+**/TestResults/
+
+.git/
+.github/
+.claude/
+.mcp.json
+tests/
+scripts/
+infra/
+*.pdf
+*.md
+docker-compose*.yml
+**/Dockerfile

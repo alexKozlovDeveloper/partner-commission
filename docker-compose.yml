@@ -1,0 +1,97 @@
+# Локальный запуск всей системы:
+#   docker compose up --build
+# Swagger: http://localhost:8081/swagger (partners), :8082 (commissions), :8083 (wallets)
+# Полный сброс данных (в т.ч. чтобы заново отработал infra/postgres-init): docker compose down -v
+
+name: partner-commission
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  # не меньше HostOptions.ShutdownTimeout (30 с): иначе Docker убьёт процесс через 10 с, не дав доработать фоновым задачам
+  stop_grace_period: 35s
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+    interval: 5s
+    timeout: 3s
+    retries: 12
+    start_period: 10s
+
+x-service-environment: &service-environment
+  # Development — чтобы был доступен Swagger; строки подключения ниже перекрывают appsettings.Development.json
+  ASPNETCORE_ENVIRONMENT: Development
+  # формат логов: simple (читаемо в `docker compose logs`) или json (для сборщика логов)
+  Logging__Console__FormatterName: simple
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      # 5433 снаружи — чтобы не конфликтовать с локальным Postgres на 5432
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # создаёт базы partners / commissions / wallets при первой инициализации тома
+      - ./infra/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h 127.0.0.1: во время init-скриптов временный сервер слушает только сокет,
+      # поэтому проверка по TCP не пройдёт, пока базы не созданы
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "app", "-d", "postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  partners:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: src/PartnerCommission.Partners.Api/Dockerfile
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Db: Host=postgres;Database=partners;Username=app;Password=app
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  wallets:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: src/PartnerCommission.Wallets.Api/Dockerfile
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Db: Host=postgres;Database=wallets;Username=app;Password=app
+    ports:
+      - "8083:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  commissions:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: src/PartnerCommission.Commissions.Api/Dockerfile
+    environment:
+      <<: *service-environment
+      ConnectionStrings__Db: Host=postgres;Database=commissions;Username=app;Password=app
+      Services__Partners: http://partners:8080/
+      Services__Wallets: http://wallets:8080/
+    ports:
+      - "8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # для корректности не обязательно (вызовы соседей повторяются), но старт получается чище
+      partners:
+        condition: service_healthy
+      wallets:
+        condition: service_healthy
+
+volumes:
+  pgdata:
