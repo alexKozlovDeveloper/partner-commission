@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Partners.Api;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Services;
+using PartnerCommission.Shared.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,7 +32,12 @@ builder.Services.AddOptions<PartnersOptions>()
 
 builder.Services.AddScoped<IUserService, UsersService>();
 
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

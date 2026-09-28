@@ -4,6 +4,7 @@ using PartnerCommission.Commissions.Api.Background;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
+using PartnerCommission.Shared.Exceptions;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,7 +54,12 @@ builder.Services.AddScoped<OutboxMessageHandler>();
 builder.Services.AddHostedService<ProfitEventProcessor>();
 builder.Services.AddHostedService<OutboxDispatcher>();
 
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

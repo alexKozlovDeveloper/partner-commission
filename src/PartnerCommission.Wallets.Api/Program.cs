@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Wallets.Api.Background;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Services;
@@ -30,7 +31,12 @@ builder.Services.AddScoped<PayoutHandler>();
 
 builder.Services.AddHostedService<PayoutProcessor>();
 
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
