@@ -29,11 +29,13 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
 
                     b.Property<string>("BeneficiaryExternalId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -43,10 +45,13 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
 
                     b.Property<string>("ProfitEventId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
-                    b.Property<int>("SchemaType")
-                        .HasColumnType("integer");
+                    b.Property<string>("SchemaType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.HasKey("Id");
 
