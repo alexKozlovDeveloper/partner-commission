@@ -37,7 +37,7 @@ public class UsersService(
                 x.Id,
                 x.ExternalId,
                 x.ParentId,
-                x.ParentId != null ? x.Parent.ExternalId : null
+                x.Parent != null ? x.Parent.ExternalId : null
                 ))
             .ToListAsync(ct);
 
