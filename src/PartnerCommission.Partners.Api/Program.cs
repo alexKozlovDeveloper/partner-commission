@@ -30,6 +30,7 @@ builder.Services.AddOptions<PartnersOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddScoped<UserTreeQueries>();
 builder.Services.AddScoped<IUserService, UsersService>();
 
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();

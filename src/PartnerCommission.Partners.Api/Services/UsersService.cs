@@ -7,11 +7,13 @@ using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
+using System.ComponentModel.DataAnnotations;
 
 namespace PartnerCommission.Partners.Api.Services;
 
 public class UsersService(
     PartnersDbContext dbContext,
+    UserTreeQueries treeQueries,
     IOptions<PartnersOptions> partnersOptions
     ) : IUserService
 {
@@ -92,27 +94,78 @@ public class UsersService(
         return users;
     }
 
+    private const long TreeWriteLockKey = 7_200_001;
     public async Task SetPartnerAsync(string externalId, SetPartnerRequest setPartnerModel, CancellationToken ct)
     {
-        var d = partnersOptions.Value;
-
         var partnerExternalId = setPartnerModel.PartnerExternalId;
 
-        var users = await dbContext.Users
-            .Where(x => x.ExternalId == externalId || x.ExternalId == setPartnerModel.PartnerExternalId)
-            .ToListAsync(ct);
+        if (externalId == partnerExternalId)
+            throw new ValidationException("User cannot be their own partner");
 
-        var user = users
-            .Where(x => x.ExternalId == externalId)
-            .FirstOrDefault() ?? throw new NotFoundException(nameof(User), externalId);
+        var maxDepth = partnersOptions.Value.MaxDepth;
 
-        var partner = users
-            .Where(x => x.ExternalId == partnerExternalId)
-            .FirstOrDefault() ?? throw new NotFoundException(nameof(User), partnerExternalId);
+        var strategy = dbContext.Database.CreateExecutionStrategy();
 
-        user.Parent = partner;
+        await strategy.ExecuteAsync(async () =>
+        {
+            dbContext.ChangeTracker.Clear();
 
-        await dbContext.SaveChangesAsync(ct);
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(ct);
+
+            await dbContext.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock({TreeWriteLockKey})", ct);
+
+            var users = await dbContext.Users
+                .Where(x => x.ExternalId == externalId || x.ExternalId == partnerExternalId)
+                .ToListAsync(ct);
+
+            var user = users.FirstOrDefault(x => x.ExternalId == externalId)
+                ?? throw new NotFoundException(nameof(User), externalId);
+
+            var partner = users.FirstOrDefault(x => x.ExternalId == partnerExternalId)
+                ?? throw new NotFoundException(nameof(User), partnerExternalId);
+
+            if (user.ParentId == partner.Id)
+                return;
+
+            var partnerAncestors = await treeQueries.GetAncestorsAsync(partner.Id, maxDepth + 1, ct);
+            var userSubtreeHeight = await treeQueries.GetSubtreeHeightAsync(user.Id, maxDepth + 1, ct);
+
+            var partnerAncestorIds = partnerAncestors
+                .Select(x => x.Id)
+                .ToList();
+
+            var violation = PartnerLinkRules.Check(
+                user.Id,
+                partner.Id,
+                partnerAncestorIds,
+                userSubtreeHeight,
+                maxDepth
+                );
+
+            switch (violation)
+            {
+                case PartnerLinkViolation.None:
+                    break;
+
+                case PartnerLinkViolation.SelfReference:
+                    throw new ValidationException("User cannot be their own partner");
+
+                case PartnerLinkViolation.Cycle:
+                    throw new ConflictException($"User '{partnerExternalId}' is a descendant of '{externalId}': the link would create a cycle");
+
+                case PartnerLinkViolation.DepthExceeded:
+                    throw new ConflictException($"Linking '{externalId}' to '{partnerExternalId}' exceeds max tree depth of {maxDepth}");
+
+                default:
+                    throw new InvalidOperationException($"Unknown partner link violation '{violation}'");
+            }
+
+            user.ParentId = partner.Id;
+
+            await dbContext.SaveChangesAsync(ct);
+
+            await transaction.CommitAsync(ct);
+        });
     }
 
     public async Task DeletePartnerAsync(string externalId, CancellationToken ct)
@@ -128,80 +181,40 @@ public class UsersService(
 
     public async Task<PartnersTreeResponse> GetPartnersTreeAsync(string externalId, CancellationToken ct)
     {
-        // TODO: stub, must be rework (bad optimization for now)
-        
-        var user = await dbContext.Users
-            .Where(x => x.ExternalId == externalId)
-            .FirstOrDefaultAsync(ct) ?? throw new NotFoundException(nameof(User), externalId);
+        var maxDepth = partnersOptions.Value.MaxDepth;
 
-        var ancestors = new List<AncestorDto>();
+        var userId = await FindUserIdAsync(externalId, ct)
+            ?? throw new NotFoundException(nameof(User), externalId);
 
-        {
-            Guid? ancestorId = user.ParentId;
-            var level = 1;
-            while (ancestorId != null)
-            {
-                var ancestor = await dbContext.Users
-                    .Where(x => x.Id == ancestorId)
-                    .FirstAsync(ct);
+        var ancestors = await treeQueries.GetAncestorsAsync(userId, maxDepth, ct);
+        var descendants = await treeQueries.GetDescendantsAsync(userId, maxDepth, ct);
 
-                ancestors.Add(new AncestorDto(ancestor.ExternalId, level));
+        var childrenByParent = descendants.ToLookup(x => x.ParentId);
 
-                ancestorId = ancestor.ParentId;
-                level++;
-            }
-        }
+        IReadOnlyList<TreeNodeDto> BuildChildren(Guid parentId) => childrenByParent[parentId]
+            .Select(x => new TreeNodeDto(x.ExternalId, x.Level, BuildChildren(x.Id)))
+            .ToList();
 
-        var descendants = await GetDescendantsRecursionAsync(level: 1, user.Id, ct);
-
-        var result = new PartnersTreeResponse(externalId, ancestors, descendants);
+        var result = new PartnersTreeResponse(
+            externalId,
+            ancestors.Select(x => new AncestorDto(x.ExternalId, x.Level)).ToList(),
+            BuildChildren(userId));
 
         return result;
     }
 
-    private async Task<List<TreeNodeDto>> GetDescendantsRecursionAsync(int level, Guid parentId, CancellationToken ct)
+    public async Task<AncestorsResponse> GetAncestorsAsync(string externalId, CancellationToken ct)
     {
-        var descendants = new List<TreeNodeDto>();
+        var userId = await FindUserIdAsync(externalId, ct)
+            ?? throw new NotFoundException(nameof(User), externalId);
 
-        var childs = await dbContext.Users
-            .Where(x => x.ParentId == parentId)
-            .ToListAsync(ct);
+        var ancestors = await treeQueries.GetAncestorsAsync(userId, partnersOptions.Value.MaxDepth, ct);
 
-        foreach (var child in childs)
-        {
-            var subChilds = await GetDescendantsRecursionAsync(level + 1, child.Id, ct);
-            descendants.Add(new TreeNodeDto(child.ExternalId, level, subChilds));
-        }
-
-        return descendants;
-    }
-
-    public async Task<AncestorsResponse> GetAncestorsAsync(string externalId, CancellationToken ct) 
-    {
-        // TODO: stub, must be rework (bad optimization for now)
-
-        var user = await dbContext.Users
-            .Where(x => x.ExternalId == externalId)
-            .FirstOrDefaultAsync(ct) ?? throw new NotFoundException(nameof(User), externalId);
-
-        var ancestors = new List<AncestorItem>();
-                
-        Guid? ancestorId = user.ParentId;
-        var level = 1;
-        while (ancestorId != null)
-        {
-            var ancestor = await dbContext.Users
-                .Where(x => x.Id == ancestorId)
-                .FirstAsync(ct);
-
-            ancestors.Add(new AncestorItem(ancestor.ExternalId, level));
-
-            ancestorId = ancestor.ParentId;
-            level++;
-        }
-
-        var result = new AncestorsResponse(externalId, ancestors);
+        var result = new AncestorsResponse(
+            externalId,
+            ancestors.Select(x => new AncestorItem(x.ExternalId, x.Level)).ToList());
 
         return result;
-    }
+    }    
 }
+
