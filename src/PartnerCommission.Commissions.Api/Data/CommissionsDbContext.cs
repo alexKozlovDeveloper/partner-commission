@@ -54,6 +54,8 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
         {
             e.ToTable("commissions");
             e.HasKey(x => x.Id);
+
+            e.HasIndex(x => new { x.ProfitEventId, x.Level }).IsUnique();
         });
 
         modelBuilder.Entity<OutboxMessage>(e =>

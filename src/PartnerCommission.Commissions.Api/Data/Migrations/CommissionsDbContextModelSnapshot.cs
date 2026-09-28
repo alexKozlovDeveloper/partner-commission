@@ -50,6 +50,9 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProfitEventId", "Level")
+                        .IsUnique();
+
                     b.ToTable("commissions", (string)null);
                 });
 
@@ -140,6 +143,8 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("UserExternalId", "CreatedAtUtc");
 
                     b.ToTable("profit_events", (string)null);
                 });

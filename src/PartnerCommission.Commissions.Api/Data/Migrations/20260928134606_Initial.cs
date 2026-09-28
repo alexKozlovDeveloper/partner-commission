@@ -85,6 +85,12 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 values: new object[] { "commission_schema", "Linear" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_commissions_ProfitEventId_Level",
+                table: "commissions",
+                columns: new[] { "ProfitEventId", "Level" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_outbox_messages_ProcessedAtUtc_NextAttemptAtUtc",
                 table: "outbox_messages",
                 columns: new[] { "ProcessedAtUtc", "NextAttemptAtUtc" });
@@ -99,6 +105,11 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 name: "IX_profit_events_Status",
                 table: "profit_events",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_profit_events_UserExternalId_CreatedAtUtc",
+                table: "profit_events",
+                columns: new[] { "UserExternalId", "CreatedAtUtc" });
         }
 
         /// <inheritdoc />

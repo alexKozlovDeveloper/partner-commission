@@ -12,7 +12,7 @@ using PartnerCommission.Commissions.Api.Data;
 namespace PartnerCommission.Commissions.Api.Data.Migrations
 {
     [DbContext(typeof(CommissionsDbContext))]
-    [Migration("20260928114039_Initial")]
+    [Migration("20260928134606_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -52,6 +52,9 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProfitEventId", "Level")
+                        .IsUnique();
 
                     b.ToTable("commissions", (string)null);
                 });
@@ -143,6 +146,8 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("UserExternalId", "CreatedAtUtc");
 
                     b.ToTable("profit_events", (string)null);
                 });
