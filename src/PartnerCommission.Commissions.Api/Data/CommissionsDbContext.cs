@@ -23,6 +23,8 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
 
             e.HasIndex(x => x.Status);
 
+            e.HasIndex(x => new { x.UserExternalId, x.CreatedAtUtc });
+
             e.Property(x => x.EventExternalId).HasMaxLength(64);
             e.Property(x => x.UserExternalId).HasMaxLength(64);
 

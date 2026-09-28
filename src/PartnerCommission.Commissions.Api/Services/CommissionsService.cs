@@ -1,4 +1,5 @@
-﻿using PartnerCommission.Commissions.Api.Contracts;
+﻿using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 
@@ -29,5 +30,23 @@ public class CommissionsService(
         commissionsDbContext.ProfitEvents.Add(profitEvent);
 
         await commissionsDbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ProfitEventResponse>> GetProfitEventsAsync(string externalId, CancellationToken ct)
+    {
+        var result = await commissionsDbContext.ProfitEvents
+            .Where(x => x.UserExternalId == externalId)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Select(x => new ProfitEventResponse(
+                x.EventExternalId,
+                x.Profit,
+                x.SchemaType,
+                x.Status,
+                x.CreatedAtUtc,
+                x.ProcessedAtUtc
+                ))
+            .ToListAsync(ct);
+
+        return result;
     }
 }
