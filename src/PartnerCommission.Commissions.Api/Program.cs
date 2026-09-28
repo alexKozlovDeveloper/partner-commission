@@ -59,6 +59,8 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+await CommissionsDbSeeder.SeedAsync(app.Services);
+
 app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
