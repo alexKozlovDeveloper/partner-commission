@@ -4,7 +4,7 @@ namespace PartnerCommission.Commissions.Api.Services;
 
 public interface ICommissionsService
 {
-    Task ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct);
+    Task<ReceiveProfitEventResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct);
     Task<IReadOnlyList<ProfitEventResponse>> GetProfitEventsAsync(string externalId, CancellationToken ct);
     Task<ProfitEventDetailsResponse?> GetProfitEventAsync(string externalId, string eventExternalId, CancellationToken ct);
 }

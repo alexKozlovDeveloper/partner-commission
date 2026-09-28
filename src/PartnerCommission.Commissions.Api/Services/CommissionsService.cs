@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Shared.Exceptions;
 
 namespace PartnerCommission.Commissions.Api.Services;
 
@@ -12,8 +14,15 @@ public class CommissionsService(
     ILogger<CommissionsService> logger
     ) : ICommissionsService
 {
-    public async Task ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
+    public async Task<ReceiveProfitEventResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
+        var existing = await commissionsDbContext.ProfitEvents
+            .Where(x => x.EventExternalId == request.EventExternalId)
+            .FirstOrDefaultAsync(ct);
+
+        if (existing is not null)
+            return ToDuplicateResult(existing, externalId);
+
         var currentSchemaType = await commissionSchemaSettings.GetCurrentAsync(ct);
 
         var profitEvent = new ProfitEvent
@@ -31,7 +40,31 @@ public class CommissionsService(
 
         commissionsDbContext.ProfitEvents.Add(profitEvent);
 
-        await commissionsDbContext.SaveChangesAsync(ct);
+        try
+        {
+            await commissionsDbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            commissionsDbContext.ChangeTracker.Clear();
+
+            var concurrent = await commissionsDbContext.ProfitEvents
+                .Where(x => x.EventExternalId == request.EventExternalId)
+                .FirstOrDefaultAsync(ct)
+                ?? throw new InvalidOperationException($"Profit event '{request.EventExternalId}' violated unique index but was not found", ex);
+
+            return ToDuplicateResult(concurrent, externalId);
+        }
+
+        return new ReceiveProfitEventResult(profitEvent.Status, Duplicate: false);
+    }
+
+    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId)
+    {
+        if (existing.UserExternalId != userExternalId)
+            throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists for another user");
+
+        return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
     }
 
     public async Task<IReadOnlyList<ProfitEventResponse>> GetProfitEventsAsync(string externalId, CancellationToken ct)

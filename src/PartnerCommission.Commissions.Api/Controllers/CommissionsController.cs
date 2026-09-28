@@ -13,9 +13,13 @@ public class CommissionsController(
     [HttpPost("{externalId}/profit-events")]
     public async Task<IActionResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
-        await commissionsService.ReciveProfitEventAsync(externalId, request, ct);
+        var result = await commissionsService.ReciveProfitEventAsync(externalId, request, ct);
 
-        return Ok();
+        var response = new ReceiveProfitEventResponse(request.EventExternalId, result.Status);
+
+        return result.Duplicate
+            ? Ok(response)
+            : Accepted($"/users/{Uri.EscapeDataString(externalId)}/profit-events/{Uri.EscapeDataString(request.EventExternalId)}", response);
     }
 
     [HttpGet("{externalId}/profit-events")]
