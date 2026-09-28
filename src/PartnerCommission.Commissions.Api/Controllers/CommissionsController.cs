@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Services;
+using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Commissions.Api.Controllers;
 
@@ -23,9 +24,9 @@ public class CommissionsController(
     }
 
     [HttpGet("{externalId}/profit-events")]
-    public async Task<IActionResult> GetProfitEventsAsync(string externalId, CancellationToken ct)
+    public async Task<IActionResult> GetProfitEventsAsync(string externalId, [FromQuery] PageRequest paging, CancellationToken ct)
     {
-        var result = await commissionsService.GetProfitEventsAsync(externalId, ct);
+        var result = await commissionsService.GetProfitEventsAsync(externalId, paging, ct);
 
         return Ok(result);
     }

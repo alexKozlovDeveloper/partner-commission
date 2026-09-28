@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Services;
+using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Partners.Api.Controllers;
 
@@ -31,9 +32,9 @@ public class UsersController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> ListUsersAsync(CancellationToken ct)
+    public async Task<IActionResult> ListUsersAsync([FromQuery] PageRequest paging, CancellationToken ct)
     {
-        var users = await userService.ListAsync(ct);
+        var users = await userService.ListAsync(paging, ct);
 
         return Ok(users);
     }

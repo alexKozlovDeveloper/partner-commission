@@ -6,6 +6,7 @@ using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;
 using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Partners.Api.Services;
 
@@ -76,16 +77,17 @@ public class UsersService(
         return userData?.Id ?? null;
     }
 
-    public async Task<IReadOnlyList<UserResponse>> ListAsync(CancellationToken ct)
+    public async Task<PagedResponse<UserResponse>> ListAsync(PageRequest page, CancellationToken ct)
     {
         var users = await dbContext.Users
+            .OrderBy(x => x.ExternalId)
             .Select(x => new UserResponse(
                 x.Id,
                 x.ExternalId,
                 x.ParentId,
                 x.Parent != null ? x.Parent.ExternalId : null
                 ))
-            .ToListAsync(ct);
+            .ToPagedAsync(page, ct);
 
         return users;
     }

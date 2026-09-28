@@ -4,6 +4,7 @@ using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Commissions.Api.Services;
 
@@ -72,11 +73,12 @@ public class CommissionsService(
         return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
     }
 
-    public async Task<IReadOnlyList<ProfitEventResponse>> GetProfitEventsAsync(string externalId, CancellationToken ct)
+    public async Task<PagedResponse<ProfitEventResponse>> GetProfitEventsAsync(string externalId, PageRequest page, CancellationToken ct)
     {
         var result = await commissionsDbContext.ProfitEvents
             .Where(x => x.UserExternalId == externalId)
             .OrderByDescending(x => x.CreatedAtUtc)
+                .ThenByDescending(x => x.Id)
             .Select(x => new ProfitEventResponse(
                 x.EventExternalId,
                 x.Profit,
@@ -85,7 +87,7 @@ public class CommissionsService(
                 x.CreatedAtUtc,
                 x.ProcessedAtUtc
                 ))
-            .ToListAsync(ct);
+            .ToPagedAsync(page, ct);
 
         return result;
     }

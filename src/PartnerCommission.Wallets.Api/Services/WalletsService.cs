@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Contracts;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
@@ -23,10 +24,12 @@ public class WalletsService(
         return result;
     }
 
-    public async Task<IReadOnlyList<PayoutsResponse>> GetPayoutsAsync(string userExternalId, CancellationToken ct)
+    public async Task<PagedResponse<PayoutsResponse>> GetPayoutsAsync(string userExternalId, PageRequest page, CancellationToken ct)
     {
         var result = await walletsDbContext.WalletEntries
             .Where(x => x.UserExternalId == userExternalId)
+            .OrderByDescending(x => x.AccruedAtUtc)
+                .ThenByDescending(x => x.CommissionId)
             .Select(x => new PayoutsResponse(
                 x.CommissionId,
                 x.EventExternalId,
@@ -34,7 +37,7 @@ public class WalletsService(
                 x.AccruedAtUtc,
                 x.PaidAtUtc
                 ))
-            .ToListAsync(ct);
+            .ToPagedAsync(page, ct);
 
         return result;
     }

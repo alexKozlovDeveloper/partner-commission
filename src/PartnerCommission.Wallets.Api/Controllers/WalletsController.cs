@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Services;
 
 namespace PartnerCommission.Wallets.Api.Controllers;
@@ -18,9 +19,9 @@ public class WalletsController(
     }
 
     [HttpGet("{userExternalId}/wallet/payouts")]
-    public async Task<IActionResult> GetPayoutsAsync(string userExternalId, CancellationToken ct)
+    public async Task<IActionResult> GetPayoutsAsync(string userExternalId, [FromQuery] PageRequest paging, CancellationToken ct)
     {
-        var result = await walletsService.GetPayoutsAsync(userExternalId, ct);
+        var result = await walletsService.GetPayoutsAsync(userExternalId, paging, ct);
 
         return Ok(result);
     }
