@@ -10,13 +10,24 @@ public class UsersController(
     IUserService userService
     ) : ControllerBase
 {
+    [HttpGet("{externalId}")]
+    public async Task<IActionResult> GetUserAsync(string externalId, CancellationToken ct)
+    {
+        var result = await userService.GetAsync(externalId, ct);
+
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken ct) 
     {
-        var id = await userService.CreateAsync(request, ct);
+        var result = await userService.CreateAsync(request, ct);
 
-        //return Created($"/users/{request.ExternalId}", new { id, request.ExternalId });
-        return Created();
+        var response = new CreateUserResponse(result.Id, request.ExternalId);
+
+        return result.Duplicate
+            ? Ok(response)
+            : Created($"/users/{Uri.EscapeDataString(request.ExternalId)}", response);
     }
 
     [HttpGet]

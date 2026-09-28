@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
@@ -13,8 +14,28 @@ public class UsersService(
     IOptions<PartnersOptions> partnersOptions
     ) : IUserService
 {
-    public async Task<Guid> CreateAsync(CreateUserRequest createUserModel, CancellationToken ct)
+    public async Task<UserResponse> GetAsync(string externalId, CancellationToken ct)
     {
+        var user = await dbContext.Users
+            .Where(x => x.ExternalId == externalId)
+            .Select(x => new UserResponse(
+                x.Id,
+                x.ExternalId,
+                x.ParentId,
+                x.Parent != null ? x.Parent.ExternalId : null
+                ))
+            .FirstOrDefaultAsync(ct) ?? throw new NotFoundException(nameof(User), externalId);
+
+        return user;
+    }
+
+    public async Task<CreateUserResult> CreateAsync(CreateUserRequest createUserModel, CancellationToken ct)
+    {
+        var existingId = await FindUserIdAsync(createUserModel.ExternalId, ct);
+
+        if (existingId is not null)
+            return new CreateUserResult(existingId.Value, Duplicate: true);
+
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -25,12 +46,37 @@ public class UsersService(
 
         dbContext.Users.Add(user);
 
-        await dbContext.SaveChangesAsync(ct);
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            dbContext.ChangeTracker.Clear();
 
-        return user.Id;
+            var concurrentId = await FindUserIdAsync(createUserModel.ExternalId, ct)
+                ?? throw new InvalidOperationException($"User '{createUserModel.ExternalId}' violated unique index but was not found", ex);
+
+            return new CreateUserResult(concurrentId, Duplicate: true);
+        }
+
+        return new CreateUserResult(user.Id, Duplicate: false);
     }
 
-    public async Task<IReadOnlyList<UserResponse>> ListAsync(CancellationToken ct) 
+    private async Task<Guid?> FindUserIdAsync(string externalId, CancellationToken ct)
+    {
+        var userData = await dbContext.Users
+            .Where(x => x.ExternalId == externalId)
+            .Select(x => new
+            { 
+                x.Id 
+            })
+            .FirstOrDefaultAsync(ct);
+
+        return userData?.Id ?? null;
+    }
+
+    public async Task<IReadOnlyList<UserResponse>> ListAsync(CancellationToken ct)
     {
         var users = await dbContext.Users
             .Select(x => new UserResponse(
