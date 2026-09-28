@@ -15,11 +15,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Shared", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Contracts", "src\PartnerCommission.Contracts\PartnerCommission.Contracts.csproj", "{B49AF451-7D86-4EB0-81F6-09AEAB765888}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Commissions.Domain.Tests", "tests\PartnerCommission.Commissions.Domain.Tests\PartnerCommission.Commissions.Domain.Tests.csproj", "{FDC7DE47-7B9B-49B7-8BBC-A3262670F0AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Commissions.Domain.Tests", "tests\PartnerCommission.Commissions.Domain.Tests\PartnerCommission.Commissions.Domain.Tests.csproj", "{FDC7DE47-7B9B-49B7-8BBC-A3262670F0AE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9D9CCB8C-969D-4456-89EB-F81952670D0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PartnerCommission.Partners.Api.Tests", "tests\PartnerCommission.Partners.Api.Tests\PartnerCommission.Partners.Api.Tests.csproj", "{A51E78B1-287A-4214-BD51-C577C19D697C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PartnerCommission.Partners.Api.Tests", "tests\PartnerCommission.Partners.Api.Tests\PartnerCommission.Partners.Api.Tests.csproj", "{A51E78B1-287A-4214-BD51-C577C19D697C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,10 +63,11 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FDC7DE47-7B9B-49B7-8BBC-A3262670F0AE} = {9D9CCB8C-969D-4456-89EB-F81952670D0C}
+		{A51E78B1-287A-4214-BD51-C577C19D697C} = {9D9CCB8C-969D-4456-89EB-F81952670D0C}
+	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29899C57-D305-4D6D-91F0-A1F17F34F4E9}
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{A51E78B1-287A-4214-BD51-C577C19D697C} = {9D9CCB8C-969D-4456-89EB-F81952670D0C}
 	EndGlobalSection
 EndGlobal
