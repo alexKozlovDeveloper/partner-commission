@@ -1,10 +1,18 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Commissions.Api.Background;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Services;
+using PartnerCommission.Commissions.Domain;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("Db")
+    ?? throw new InvalidOperationException("Connection string 'Db' is not configured");
+
+var partnersBaseAddress = builder.Configuration["Services:Partners"]
+    ?? throw new InvalidOperationException("Services:Partners is not configured");
 
 // Add services to the container.
 
@@ -14,9 +22,6 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-var connectionString = builder.Configuration.GetConnectionString("Db")
-    ?? throw new InvalidOperationException("Connection string 'Db' is not configured");
 
 builder.Services
     .AddHealthChecks()
@@ -28,6 +33,15 @@ builder.Services.AddDbContext<CommissionsDbContext>(options =>
 
 builder.Services.AddScoped<ICommissionsService, CommissionsService>();
 builder.Services.AddScoped<ICommissionSchemaSettings, CommissionSchemaSettings>();
+builder.Services.AddScoped<ICommissionCalculator, CommissionCalculator>();
+
+builder.Services
+    .AddHttpClient<IPartnersClient, PartnersClient>(client => { client.BaseAddress = new Uri(partnersBaseAddress); })
+    .AddStandardResilienceHandler();
+
+//builder.Services.AddSingleton<CommissionCalculator>();
+builder.Services.AddScoped<ProfitEventHandler>();
+builder.Services.AddHostedService<ProfitEventProcessor>();
 
 var app = builder.Build();
 
