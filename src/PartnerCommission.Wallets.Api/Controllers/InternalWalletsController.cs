@@ -17,4 +17,12 @@ public class InternalWalletsController(
 
         return NoContent();
     }
+
+    [HttpPost("commissions/payments:query")]
+    public async Task<IActionResult> QueryCommissionPaymentsAsync(CommissionPaymentsQuery query, CancellationToken ct)
+    {
+        var result = await walletsService.GetCommissionPaymentsAsync(query.CommissionIds, ct);
+
+        return Ok(result);
+    }
 }

@@ -53,6 +53,19 @@ public class WalletsService(
         return result;
     }
 
+    public async Task<IReadOnlyList<CommissionPaymentResponse>> GetCommissionPaymentsAsync(IReadOnlyCollection<Guid> commissionIds, CancellationToken ct)
+    {
+        var result = await walletsDbContext.WalletEntries
+            .Where(x => commissionIds.Contains(x.CommissionId))
+            .Select(x => new CommissionPaymentResponse(
+                x.CommissionId,
+                x.PaidAtUtc
+                ))
+            .ToListAsync(ct);
+
+        return result;
+    }
+
     public async Task ReceiveCommissionAsync(CommissionAccruedMessage message, CancellationToken ct)
     {
         if (message.Amount <= 0)
