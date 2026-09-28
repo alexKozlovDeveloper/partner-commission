@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
+using PartnerCommission.Shared.Data;
 
 namespace PartnerCommission.Commissions.Api.Background;
 
@@ -11,6 +12,8 @@ internal sealed class OutboxDispatcher(
     // TODO: move to app config
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
     private const int BatchSize = 50;
+
+    private const long DispatchLockKey = 54;
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -36,6 +39,18 @@ internal sealed class OutboxDispatcher(
 
     private async Task DispatchPendingAsync(CancellationToken ct)
     {
+        await using var lockScope = scopeFactory.CreateAsyncScope();
+
+        var lockDbContext = lockScope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
+
+        await using var dispatchLock = await AdvisoryLock.TryAcquireAsync(lockDbContext, DispatchLockKey, ct);
+
+        if (dispatchLock is null)
+        {
+            logger.LogDebug("Outbox is dispatched by another instance, skipping tick");
+            return;
+        }
+
         List<Guid> ids;
 
         await using (var scope = scopeFactory.CreateAsyncScope())

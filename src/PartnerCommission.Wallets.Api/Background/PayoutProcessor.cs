@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
 
@@ -12,6 +13,8 @@ internal sealed class PayoutProcessor(
     // TODO: move to app config
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(15);
     private const int BatchSize = 50;
+
+    private const long PayoutLockKey = 53;
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -37,6 +40,18 @@ internal sealed class PayoutProcessor(
 
     private async Task PayoutPendingAsync(CancellationToken ct)
     {
+        await using var lockScope = scopeFactory.CreateAsyncScope();
+
+        var lockDbContext = lockScope.ServiceProvider.GetRequiredService<WalletsDbContext>();
+
+        await using var payoutLock = await AdvisoryLock.TryAcquireAsync(lockDbContext, PayoutLockKey, ct);
+
+        if (payoutLock is null)
+        {
+            logger.LogDebug("Payout is running on another instance, skipping tick");
+            return;
+        }
+
         List<string> userExternalIds;
 
         await using (var scope = scopeFactory.CreateAsyncScope())

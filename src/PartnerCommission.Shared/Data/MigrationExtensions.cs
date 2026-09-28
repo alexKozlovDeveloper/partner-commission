@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -23,64 +22,33 @@ public static class MigrationExtensions
         var db = scope.ServiceProvider.GetRequiredService<TContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<TContext>>();
 
-        await db.Database.OpenConnectionAsync(ct);
+        AdvisoryLock? migrationLock;
 
-        try
+        while ((migrationLock = await AdvisoryLock.TryAcquireAsync(db, MigrationLockKey, ct)) is null)
         {
-            var connection = db.Database.GetDbConnection();
+            logger.LogInformation("Migration lock is held by another instance, waiting...");
 
-            while (!await TryAcquireLockAsync(connection, ct))
-            {
-                logger.LogInformation("Migration lock is held by another instance, waiting...");
-
-                await Task.Delay(RetryDelay, ct);
-            }
-
-            try
-            {
-                var pending = (await db.Database.GetPendingMigrationsAsync(ct)).ToList();
-
-                if (pending.Count == 0)
-                {
-                    logger.LogInformation("Database {Database} is up to date", connection.Database);
-                    return;
-                }
-
-                logger.LogInformation("Applying {Count} migration(s) to {Database}: {Migrations}",
-                    pending.Count, connection.Database, string.Join(", ", pending));
-
-                await db.Database.MigrateAsync(ct);
-
-                logger.LogInformation("Migrations applied to {Database}", connection.Database);
-            }
-            finally
-            {
-                await ExecuteScalarAsync(connection, "SELECT pg_advisory_unlock(@key)", CancellationToken.None);
-            }
+            await Task.Delay(RetryDelay, ct);
         }
-        finally
+
+        await using (migrationLock)
         {
-            await db.Database.CloseConnectionAsync();
+            var database = db.Database.GetDbConnection().Database;
+
+            var pending = (await db.Database.GetPendingMigrationsAsync(ct)).ToList();
+
+            if (pending.Count == 0)
+            {
+                logger.LogInformation("Database {Database} is up to date", database);
+                return;
+            }
+
+            logger.LogInformation("Applying {Count} migration(s) to {Database}: {Migrations}",
+                pending.Count, database, string.Join(", ", pending));
+
+            await db.Database.MigrateAsync(ct);
+
+            logger.LogInformation("Migrations applied to {Database}", database);
         }
-    }
-
-    private static async Task<bool> TryAcquireLockAsync(DbConnection connection, CancellationToken ct)
-    {
-        var result = await ExecuteScalarAsync(connection, "SELECT pg_try_advisory_lock(@key)", ct);
-
-        return result is true;
-    }
-
-    private static async Task<object?> ExecuteScalarAsync(DbConnection connection, string sql, CancellationToken ct)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = "key";
-        parameter.Value = MigrationLockKey;
-        command.Parameters.Add(parameter);
-
-        return await command.ExecuteScalarAsync(ct);
     }
 }
