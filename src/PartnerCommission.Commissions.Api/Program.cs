@@ -3,6 +3,7 @@ using PartnerCommission.Commissions.Api.Background;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Hosting;
 using System.Text.Json.Serialization;
 
@@ -57,6 +58,7 @@ builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();
 
+await app.Services.MigrateWithLockAsync<CommissionsDbContext>();
 await CommissionsDbSeeder.SeedAsync(app.Services);
 
 app.UseServiceDefaults();

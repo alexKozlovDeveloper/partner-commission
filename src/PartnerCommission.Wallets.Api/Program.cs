@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Hosting;
 using PartnerCommission.Wallets.Api.Background;
 using PartnerCommission.Wallets.Api.Data;
@@ -33,6 +34,8 @@ builder.Services.AddScoped<PayoutHandler>();
 builder.Services.AddHostedService<PayoutProcessor>();
 
 var app = builder.Build();
+
+await app.Services.MigrateWithLockAsync<WalletsDbContext>();
 
 app.UseServiceDefaults();
 

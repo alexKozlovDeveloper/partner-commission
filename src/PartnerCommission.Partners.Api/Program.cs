@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Partners.Api;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Services;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +36,8 @@ builder.Services.AddScoped<UserTreeQueries>();
 builder.Services.AddScoped<IUserService, UsersService>();
 
 var app = builder.Build();
+
+await app.Services.MigrateWithLockAsync<PartnersDbContext>();
 
 app.UseServiceDefaults();
 

@@ -1,0 +1,3 @@
+CREATE DATABASE partners;
+CREATE DATABASE commissions;
+CREATE DATABASE wallets;
