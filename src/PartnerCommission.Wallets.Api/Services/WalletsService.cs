@@ -37,9 +37,20 @@ public class WalletsService(
         return result;
     }
 
-    public async Task<PayoutsResponse> GetPayoutsAsync(string userExternalId, CancellationToken ct)
+    public async Task<IReadOnlyList<PayoutsResponse>> GetPayoutsAsync(string userExternalId, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var result = await walletsDbContext.WalletEntries
+            .Where(x => x.UserExternalId == userExternalId)
+            .Select(x => new PayoutsResponse(
+                x.CommissionId,
+                x.EventExternalId,
+                x.Amount,
+                x.AccruedAtUtc,
+                x.PaidAtUtc
+                ))
+            .ToListAsync(ct);
+
+        return result;
     }
 
     public async Task ReceiveCommissionAsync(CommissionAccruedMessage message, CancellationToken ct)
