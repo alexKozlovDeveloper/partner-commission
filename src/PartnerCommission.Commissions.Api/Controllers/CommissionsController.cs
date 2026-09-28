@@ -11,7 +11,7 @@ public class CommissionsController(
     ) : ControllerBase
 {
     [HttpPost("{externalId}/profit-events")]
-    public async Task<IActionResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
+    public async Task<IActionResult> ReceiveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
         var result = await commissionsService.ReceiveProfitEventAsync(externalId, request, ct);
 

@@ -61,12 +61,12 @@ public class CommissionsService(
         return new ReceiveProfitEventResult(profitEvent.Status, Duplicate: false);
     }
 
-    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId, decimal Profit)
+    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId, decimal profit)
     {
         if (existing.UserExternalId != userExternalId)
             throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists for another user");
 
-        if (existing.Profit != Profit)
+        if (existing.Profit != profit)
             throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists with another profit");
 
         return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
