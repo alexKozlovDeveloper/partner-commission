@@ -14,6 +14,8 @@ internal sealed class ProfitEventHandler(
     ICommissionCalculator calculator,
     ILogger<ProfitEventHandler> logger)
 {
+    private static readonly TimeSpan UnresolvedRetryDelay = TimeSpan.FromSeconds(30);
+
     public async Task HandleAsync(Guid profitEventId, CancellationToken ct)
     {
         var profitEvent = await db.ProfitEvents
@@ -99,7 +101,8 @@ internal sealed class ProfitEventHandler(
             }
             else
             {
-                profitEvent.Status = ProfitEventStatus.Unresolved;                
+                profitEvent.Status = ProfitEventStatus.Unresolved;
+                profitEvent.NextAttemptAtUtc = DateTime.UtcNow + UnresolvedRetryDelay;
             }
         }
         else 

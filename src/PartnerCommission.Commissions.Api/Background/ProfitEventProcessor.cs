@@ -44,7 +44,8 @@ internal sealed class ProfitEventProcessor(
             var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
 
             ids = await commissionsDbContext.ProfitEvents
-                .Where(x => x.Status == ProfitEventStatus.Received && x.NextAttemptAtUtc <= DateTime.UtcNow)
+                .Where(x => (x.Status == ProfitEventStatus.Received || x.Status == ProfitEventStatus.Unresolved)
+                    && x.NextAttemptAtUtc <= DateTime.UtcNow)
                 .OrderBy(x => x.CreatedAtUtc)
                 .Select(x => x.Id)
                 .Take(BatchSize)
