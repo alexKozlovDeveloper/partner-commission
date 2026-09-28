@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Wallets.Api.Background;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Services;
 
@@ -24,6 +25,10 @@ builder.Services.AddDbContext<WalletsDbContext>(options =>
     );
 
 builder.Services.AddScoped<IWalletsService, WalletsService>();
+
+builder.Services.AddScoped<PayoutHandler>();
+
+builder.Services.AddHostedService<PayoutProcessor>();
 
 var app = builder.Build();
 
