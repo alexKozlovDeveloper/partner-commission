@@ -2,31 +2,32 @@
 
 public class FibonacciSchema : ICommissionSchema
 {
-    public SchemaType Type => SchemaType.Fibonacci;
+    private const int MaxLevel = 92;
 
-    private readonly Dictionary<int, int> _fibonacciSequence = new()
-    {
-        [1] = 0,
-        [2] = 1
-    };
+    private static readonly long[] Sequence = Build();
+
+    public SchemaType Type => SchemaType.Fibonacci;
 
     public decimal RateFor(int level)
     {
-        if(level <= 0)
+        if (level < 0)
             return 0;
 
-        if(_fibonacciSequence.TryGetValue(level, out int result))
-            return result;
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(level, MaxLevel);
 
-        while(_fibonacciSequence.Count < level) 
-        {
-            var a = _fibonacciSequence[_fibonacciSequence.Count - 1];
-            var b = _fibonacciSequence[_fibonacciSequence.Count];
-
-            _fibonacciSequence.Add(_fibonacciSequence.Count + 1, a + b);
-        }
-
-        return _fibonacciSequence[level];
+        return Sequence[level];
     }
 
+    private static long[] Build()
+    {
+        var sequence = new long[MaxLevel + 1];
+
+        sequence[0] = 0;
+        sequence[1] = 1;
+
+        for (var i = 2; i <= MaxLevel; i++)
+            sequence[i] = sequence[i - 1] + sequence[i - 2];
+
+        return sequence;
+    }
 }
