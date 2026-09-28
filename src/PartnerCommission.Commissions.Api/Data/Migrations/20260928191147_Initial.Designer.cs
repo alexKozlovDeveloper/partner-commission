@@ -12,7 +12,7 @@ using PartnerCommission.Commissions.Api.Data;
 namespace PartnerCommission.Commissions.Api.Data.Migrations
 {
     [DbContext(typeof(CommissionsDbContext))]
-    [Migration("20260928190534_Initial")]
+    [Migration("20260928191147_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -171,13 +171,6 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("settings", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Key = "commission_schema",
-                            Value = "Linear"
-                        });
                 });
 #pragma warning restore 612, 618
         }

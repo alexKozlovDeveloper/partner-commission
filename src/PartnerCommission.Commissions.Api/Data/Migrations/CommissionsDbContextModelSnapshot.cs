@@ -168,13 +168,6 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("settings", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Key = "commission_schema",
-                            Value = "Linear"
-                        });
                 });
 #pragma warning restore 612, 618
         }
