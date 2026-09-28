@@ -12,23 +12,6 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "commissions",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProfitEventId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    BeneficiaryExternalId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    Level = table.Column<int>(type: "integer", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    SchemaType = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_commissions", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "outbox_messages",
                 columns: table => new
                 {
@@ -79,6 +62,29 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     table.PrimaryKey("PK_settings", x => x.Key);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "commissions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfitEventId = table.Column<Guid>(type: "uuid", nullable: false),
+                    BeneficiaryExternalId = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Level = table.Column<int>(type: "integer", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
+                    SchemaType = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_commissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_commissions_profit_events_ProfitEventId",
+                        column: x => x.ProfitEventId,
+                        principalTable: "profit_events",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_commissions_ProfitEventId_Level",
                 table: "commissions",
@@ -117,10 +123,10 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 name: "outbox_messages");
 
             migrationBuilder.DropTable(
-                name: "profit_events");
+                name: "settings");
 
             migrationBuilder.DropTable(
-                name: "settings");
+                name: "profit_events");
         }
     }
 }

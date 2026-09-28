@@ -52,7 +52,10 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
 
             e.HasIndex(x => new { x.ProfitEventId, x.Level }).IsUnique();
 
-            e.Property(x => x.ProfitEventId).HasMaxLength(64);
+            e.HasOne<ProfitEvent>()
+                .WithMany()
+                .HasForeignKey(x => x.ProfitEventId)
+                .OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.BeneficiaryExternalId).HasMaxLength(64);
 
             e.Property(x => x.Amount).HasPrecision(18, 4);

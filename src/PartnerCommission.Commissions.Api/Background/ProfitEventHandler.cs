@@ -66,7 +66,7 @@ internal sealed class ProfitEventHandler(
                     var commission = new Commission
                     {
                         Id = Guid.NewGuid(),
-                        ProfitEventId = profitEvent.EventExternalId,
+                        ProfitEventId = profitEvent.Id,
                         BeneficiaryExternalId = line.BeneficiaryExternalId,
                         Level = line.Level,
                         Amount = line.Amount,

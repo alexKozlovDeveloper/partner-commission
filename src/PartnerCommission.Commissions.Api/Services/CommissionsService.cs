@@ -100,7 +100,7 @@ public class CommissionsService(
             return null;
 
         var commissions = await commissionsDbContext.Commissions
-            .Where(x => x.ProfitEventId == profitEvent.EventExternalId)
+            .Where(x => x.ProfitEventId == profitEvent.Id)
             .OrderBy(x => x.Level)
             .ToListAsync(ct);
 

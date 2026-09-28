@@ -12,7 +12,7 @@ using PartnerCommission.Commissions.Api.Data;
 namespace PartnerCommission.Commissions.Api.Data.Migrations
 {
     [DbContext(typeof(CommissionsDbContext))]
-    [Migration("20260928191147_Initial")]
+    [Migration("20260928191510_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -46,10 +46,8 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     b.Property<int>("Level")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ProfitEventId")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
+                    b.Property<Guid>("ProfitEventId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("SchemaType")
                         .IsRequired()
@@ -171,6 +169,15 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("settings", (string)null);
+                });
+
+            modelBuilder.Entity("PartnerCommission.Commissions.Api.Entities.Commission", b =>
+                {
+                    b.HasOne("PartnerCommission.Commissions.Api.Entities.ProfitEvent", null)
+                        .WithMany()
+                        .HasForeignKey("ProfitEventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
