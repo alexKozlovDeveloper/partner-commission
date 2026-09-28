@@ -25,4 +25,14 @@ public class CommissionsController(
 
         return Ok(result);
     }
+
+    [HttpGet("{externalId}/profit-events/{eventExternalId}")]
+    public async Task<IActionResult> GetProfitEventAsync(string externalId, string eventExternalId, CancellationToken ct)
+    {
+        var result = await commissionsService.GetProfitEventAsync(externalId, eventExternalId, ct);
+
+        return result is null 
+            ? NotFound() 
+            : Ok(result);
+    }
 }

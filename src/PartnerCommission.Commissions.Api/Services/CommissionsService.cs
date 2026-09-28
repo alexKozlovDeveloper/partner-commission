@@ -7,7 +7,9 @@ namespace PartnerCommission.Commissions.Api.Services;
 
 public class CommissionsService(
     CommissionsDbContext commissionsDbContext,
-    ICommissionSchemaSettings commissionSchemaSettings
+    ICommissionSchemaSettings commissionSchemaSettings,
+    IWalletsClient walletsClient,
+    ILogger<CommissionsService> logger
     ) : ICommissionsService
 {
     public async Task ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
@@ -48,5 +50,83 @@ public class CommissionsService(
             .ToListAsync(ct);
 
         return result;
+    }
+
+    public async Task<ProfitEventDetailsResponse?> GetProfitEventAsync(string externalId, string eventExternalId, CancellationToken ct)
+    {
+        var profitEvent = await commissionsDbContext.ProfitEvents
+            .Where(x => x.UserExternalId == externalId && x.EventExternalId == eventExternalId)
+            .FirstOrDefaultAsync(ct);
+
+        if (profitEvent is null)
+            return null;
+
+        var commissions = await commissionsDbContext.Commissions
+            .Where(x => x.ProfitEventId == profitEvent.EventExternalId)
+            .OrderBy(x => x.Level)
+            .ToListAsync(ct);
+
+        var commissionIds = commissions
+            .Select(x => x.Id)
+            .ToList();
+
+        var payments = await GetPaymentsAsync(commissionIds, ct);
+
+        var commissionDetails = commissions
+            .Select(x =>
+            {
+                var paidAtUtc = payments?.GetValueOrDefault(x.Id);
+
+                var paymentStatus = payments is null 
+                    ? CommissionPaymentStatus.Unknown
+                    : paidAtUtc is not null 
+                        ? CommissionPaymentStatus.Paid
+                        : CommissionPaymentStatus.Pending;
+
+                return new CommissionDetailsResponse(
+                    x.Id,
+                    x.BeneficiaryExternalId,
+                    x.Level,
+                    x.Amount,
+                    x.SchemaType,
+                    paymentStatus,
+                    paidAtUtc
+                    );
+            })
+            .ToList();
+
+        var result = new ProfitEventDetailsResponse(
+            profitEvent.EventExternalId,
+            profitEvent.UserExternalId,
+            profitEvent.Profit,
+            profitEvent.SchemaType,
+            profitEvent.Status,
+            profitEvent.CreatedAtUtc,
+            profitEvent.ProcessedAtUtc,
+            commissionDetails
+            );
+
+        return result;
+    }
+
+    private async Task<Dictionary<Guid, DateTime?>?> GetPaymentsAsync(IReadOnlyCollection<Guid> commissionIds, CancellationToken ct)
+    {
+        if (commissionIds.Count == 0)
+            return [];
+
+        try
+        {
+            var payments = await walletsClient.GetCommissionPaymentsAsync(commissionIds, ct);
+
+            var result = payments.ToDictionary(x => x.CommissionId, x => x.PaidAtUtc);
+
+            return result;
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Failed to get commission payments from Wallets, payment status is unknown");
+
+            return null;
+        }
     }
 }
