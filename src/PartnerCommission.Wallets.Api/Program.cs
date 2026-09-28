@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Wallets.Api.Data;
+using PartnerCommission.Wallets.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ builder.Services
 builder.Services.AddDbContext<WalletsDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
     );
+
+builder.Services.AddScoped<IWalletsService, WalletsService>();
 
 var app = builder.Build();
 
