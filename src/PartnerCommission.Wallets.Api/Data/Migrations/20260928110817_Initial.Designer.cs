@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PartnerCommission.Wallets.Api.Data;
@@ -11,9 +12,11 @@ using PartnerCommission.Wallets.Api.Data;
 namespace PartnerCommission.Wallets.Api.Data.Migrations
 {
     [DbContext(typeof(WalletsDbContext))]
-    partial class WalletsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260928110817_Initial")]
+    partial class Initial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

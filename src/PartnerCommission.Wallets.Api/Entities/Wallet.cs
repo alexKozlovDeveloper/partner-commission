@@ -2,5 +2,7 @@
 
 public class Wallet
 {
-    public Guid Id { get; set; }
+    public required string UserExternalId { get; set; }
+    public decimal Balance { get; set; }
+    public DateTime UpdatedAtUtc { get; set; }
 }

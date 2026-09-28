@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PartnerCommission.Contracts;
 using PartnerCommission.Wallets.Api.Services;
 
 namespace PartnerCommission.Wallets.Api.Controllers;
@@ -9,11 +10,11 @@ public class InternalWalletsController(
     IWalletsService walletsService
     ) : ControllerBase
 {
-    [HttpPost("commissions/{commissionId}")]
-    public async Task<IActionResult> ReciveCommissionAsync(string commissionId, CancellationToken ct)
+    [HttpPost("commissions")]
+    public async Task<IActionResult> ReceiveCommissionAsync(CommissionAccruedMessage message, CancellationToken ct)
     {
-        await walletsService.ReciveCommissionAsync(ct);
+        await walletsService.ReceiveCommissionAsync(message, ct);
 
-        return Ok();
+        return NoContent();
     }
 }
