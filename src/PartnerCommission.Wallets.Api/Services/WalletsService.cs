@@ -27,8 +27,8 @@ public class WalletsService(
     public async Task<PagedResponse<PayoutsResponse>> GetPayoutsAsync(string userExternalId, PageRequest page, CancellationToken ct)
     {
         var result = await walletsDbContext.WalletEntries
-            .Where(x => x.UserExternalId == userExternalId)
-            .OrderByDescending(x => x.AccruedAtUtc)
+            .Where(x => x.UserExternalId == userExternalId && x.Status == WalletEntryStatus.Paid)
+            .OrderByDescending(x => x.PaidAtUtc)
                 .ThenByDescending(x => x.CommissionId)
             .Select(x => new PayoutsResponse(
                 x.CommissionId,
