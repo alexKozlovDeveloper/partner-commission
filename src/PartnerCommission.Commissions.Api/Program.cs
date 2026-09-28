@@ -14,6 +14,9 @@ var connectionString = builder.Configuration.GetConnectionString("Db")
 var partnersBaseAddress = builder.Configuration["Services:Partners"]
     ?? throw new InvalidOperationException("Services:Partners is not configured");
 
+var walletsBaseAddress = builder.Configuration["Services:Wallets"]
+    ?? throw new InvalidOperationException("Services:Wallets is not configured");
+
 // Add services to the container.
 
 builder.Services.AddControllers()
@@ -37,6 +40,10 @@ builder.Services.AddScoped<ICommissionCalculator, CommissionCalculator>();
 
 builder.Services
     .AddHttpClient<IPartnersClient, PartnersClient>(client => { client.BaseAddress = new Uri(partnersBaseAddress); })
+    .AddStandardResilienceHandler();
+
+builder.Services
+    .AddHttpClient<IWalletsClient, WalletsClient>(client => { client.BaseAddress = new Uri(walletsBaseAddress); })
     .AddStandardResilienceHandler();
 
 //builder.Services.AddSingleton<CommissionCalculator>();
