@@ -18,21 +18,7 @@ public class WalletsService(
             .Where(x => x.UserExternalId == userExternalId)
             .FirstOrDefaultAsync(ct);
 
-        if (wallet == null) 
-        {
-            wallet = new Wallet
-            {
-                UserExternalId = userExternalId,
-                Balance = 0,
-                UpdatedAtUtc = DateTime.UtcNow,
-            };
-
-            walletsDbContext.Wallets.Add(wallet);
-
-            await walletsDbContext.SaveChangesAsync(ct);
-        }
-
-        var result = new WalletResponse(wallet.Balance);
+        var result = new WalletResponse(wallet?.Balance ?? 0);
 
         return result;
     }
