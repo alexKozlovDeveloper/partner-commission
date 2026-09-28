@@ -48,7 +48,10 @@ builder.Services
 
 //builder.Services.AddSingleton<CommissionCalculator>();
 builder.Services.AddScoped<ProfitEventHandler>();
+builder.Services.AddScoped<OutboxMessageHandler>();
+
 builder.Services.AddHostedService<ProfitEventProcessor>();
+builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();
 

@@ -1,0 +1,62 @@
+using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Commissions.Api.Data;
+
+namespace PartnerCommission.Commissions.Api.Background;
+
+internal sealed class OutboxDispatcher(
+    IServiceScopeFactory scopeFactory,
+    ILogger<OutboxDispatcher> logger
+    ) : BackgroundService
+{
+    // TODO: move to app config
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
+    private const int BatchSize = 50;
+
+    protected override async Task ExecuteAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(PollInterval);
+
+        do
+        {
+            try
+            {
+                await DispatchPendingAsync(ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Outbox dispatch loop failed");
+            }
+        }
+        while (await timer.WaitForNextTickAsync(ct));
+    }
+
+    private async Task DispatchPendingAsync(CancellationToken ct)
+    {
+        List<Guid> ids;
+
+        await using (var scope = scopeFactory.CreateAsyncScope())
+        {
+            var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
+
+            ids = await commissionsDbContext.OutboxMessages
+                .Where(x => x.ProcessedAtUtc == null && x.NextAttemptAtUtc <= DateTime.UtcNow)
+                .OrderBy(x => x.CreatedAtUtc)
+                .Select(x => x.Id)
+                .Take(BatchSize)
+                .ToListAsync(ct);
+        }
+
+        foreach (var id in ids)
+        {
+            await using var scope = scopeFactory.CreateAsyncScope();
+
+            var handler = scope.ServiceProvider.GetRequiredService<OutboxMessageHandler>();
+
+            await handler.HandleAsync(id, ct);
+        }
+    }
+}
