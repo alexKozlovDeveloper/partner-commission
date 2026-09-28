@@ -3,6 +3,7 @@ using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
+using PartnerCommission.Contracts;
 using System.Text.Json;
 
 namespace PartnerCommission.Commissions.Api.Background;
@@ -13,15 +14,16 @@ internal sealed class ProfitEventHandler(
     ICommissionCalculator calculator,
     ILogger<ProfitEventHandler> logger)
 {
-    private const int MaxAttempts = 10;
-
     public async Task HandleAsync(Guid profitEventId, CancellationToken ct)
     {
-        //using var _ = logger.BeginScope(new Dictionary<string, object> { ["EventExternalId"] = evt.EventExternalId });
-
         var profitEvent = await db.ProfitEvents
             .Where(x => x.Id == profitEventId)
             .SingleAsync(ct);
+
+        using var _ = logger.BeginScope(new Dictionary<string, object>
+        {
+            ["EventExternalId"] = profitEvent.EventExternalId
+        });
 
         try
         {
@@ -82,9 +84,12 @@ internal sealed class ProfitEventHandler(
                     var message = new OutboxMessage
                     {
                         Id = Guid.NewGuid(),
-                        Type = nameof(CommissionAccruedMessage),
+                        Type = CommissionAccruedMessage.MessageType,
                         Payload = JsonSerializer.Serialize(payload),
-                        CreatedAtUtc = now
+                        CreatedAtUtc = now,
+                        Attempts = 0,
+                        LastError = null,
+                        NextAttemptAtUtc = now
                     };
 
                     db.OutboxMessages.Add(message);

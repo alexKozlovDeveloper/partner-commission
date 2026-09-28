@@ -9,6 +9,7 @@ internal sealed class ProfitEventProcessor(
     ILogger<ProfitEventProcessor> logger
     ) : BackgroundService
 {
+    // TODO: move to app config
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
     private const int BatchSize = 50;
 
