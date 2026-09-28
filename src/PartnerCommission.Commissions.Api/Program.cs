@@ -1,13 +1,14 @@
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Background;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
-using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Hosting;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 var connectionString = builder.Configuration.GetConnectionString("Db")
     ?? throw new InvalidOperationException("Connection string 'Db' is not configured");
@@ -29,7 +30,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services
     .AddHealthChecks()
-    .AddNpgSql(connectionString, tags: ["ready"]);
+    .AddNpgSql(connectionString, tags: [ServiceDefaultsExtensions.ReadyTag]);
 
 builder.Services.AddDbContext<CommissionsDbContext>(options => 
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
@@ -54,14 +55,11 @@ builder.Services.AddScoped<OutboxMessageHandler>();
 builder.Services.AddHostedService<ProfitEventProcessor>();
 builder.Services.AddHostedService<OutboxDispatcher>();
 
-builder.Services.AddExceptionHandler<ApiExceptionHandler>();
-builder.Services.AddProblemDetails();
-
 var app = builder.Build();
 
 await CommissionsDbSeeder.SeedAsync(app.Services);
 
-app.UseExceptionHandler();
+app.UseServiceDefaults();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -70,15 +68,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapHealthChecks("/health/live", new HealthCheckOptions
-{
-    Predicate = _ => false
-});
-
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = c => c.Tags.Contains("ready")
-});
+app.MapDefaultEndpoints();
 
 app.MapControllers();
 

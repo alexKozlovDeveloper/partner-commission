@@ -1,11 +1,12 @@
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Hosting;
 using PartnerCommission.Wallets.Api.Background;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 // Add services to the container.
 
@@ -19,7 +20,7 @@ var connectionString = builder.Configuration.GetConnectionString("Db")
 
 builder.Services
     .AddHealthChecks()
-    .AddNpgSql(connectionString, tags: ["ready"]);
+    .AddNpgSql(connectionString, tags: [ServiceDefaultsExtensions.ReadyTag]);
 
 builder.Services.AddDbContext<WalletsDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
@@ -31,12 +32,9 @@ builder.Services.AddScoped<PayoutHandler>();
 
 builder.Services.AddHostedService<PayoutProcessor>();
 
-builder.Services.AddExceptionHandler<ApiExceptionHandler>();
-builder.Services.AddProblemDetails();
-
 var app = builder.Build();
 
-app.UseExceptionHandler();
+app.UseServiceDefaults();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -45,15 +43,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapHealthChecks("/health/live", new HealthCheckOptions
-{
-    Predicate = _ => false
-});
-
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = c => c.Tags.Contains("ready")
-});
+app.MapDefaultEndpoints();
 
 app.MapControllers();
 

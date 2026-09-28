@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 
 namespace PartnerCommission.Shared.Exceptions;
 
-public sealed class ApiExceptionHandler : IExceptionHandler
+public sealed class ApiExceptionHandler(
+    IProblemDetailsService problemDetailsService,
+    ILogger<ApiExceptionHandler> logger
+    ) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken ct)
     {
@@ -18,17 +22,26 @@ public sealed class ApiExceptionHandler : IExceptionHandler
         };
 
         if (status == 0)
+        {
+            logger.LogError(exception, "Unhandled exception on {Method} {Path}", httpContext.Request.Method, httpContext.Request.Path);
+
             return false;
+        }
+
+        logger.LogInformation("Request failed with {Status}: {Message}", status, exception.Message);
 
         httpContext.Response.StatusCode = status;
 
-        await httpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
-            Status = status,
-            Title = title,
-            Detail = exception.Message
-        }, ct);
-
-        return true;
+            HttpContext = httpContext,
+            Exception = exception,
+            ProblemDetails = new ProblemDetails
+            {
+                Status = status,
+                Title = title,
+                Detail = exception.Message
+            }
+        });
     }
 }
