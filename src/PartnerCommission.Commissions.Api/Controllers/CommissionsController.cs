@@ -13,7 +13,7 @@ public class CommissionsController(
     [HttpPost("{externalId}/profit-events")]
     public async Task<IActionResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
-        var result = await commissionsService.ReciveProfitEventAsync(externalId, request, ct);
+        var result = await commissionsService.ReceiveProfitEventAsync(externalId, request, ct);
 
         var response = new ReceiveProfitEventResponse(request.EventExternalId, result.Status);
 

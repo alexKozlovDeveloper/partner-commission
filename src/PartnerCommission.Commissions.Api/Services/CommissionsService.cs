@@ -14,14 +14,15 @@ public class CommissionsService(
     ILogger<CommissionsService> logger
     ) : ICommissionsService
 {
-    public async Task<ReceiveProfitEventResult> ReciveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
+    public async Task<ReceiveProfitEventResult> ReceiveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
         var existing = await commissionsDbContext.ProfitEvents
+            .AsNoTracking()
             .Where(x => x.EventExternalId == request.EventExternalId)
             .FirstOrDefaultAsync(ct);
 
         if (existing is not null)
-            return ToDuplicateResult(existing, externalId);
+            return ToDuplicateResult(existing, externalId, request.Profit);
 
         var currentSchemaType = await commissionSchemaSettings.GetCurrentAsync(ct);
 
@@ -49,20 +50,24 @@ public class CommissionsService(
             commissionsDbContext.ChangeTracker.Clear();
 
             var concurrent = await commissionsDbContext.ProfitEvents
+                .AsNoTracking()
                 .Where(x => x.EventExternalId == request.EventExternalId)
                 .FirstOrDefaultAsync(ct)
                 ?? throw new InvalidOperationException($"Profit event '{request.EventExternalId}' violated unique index but was not found", ex);
 
-            return ToDuplicateResult(concurrent, externalId);
+            return ToDuplicateResult(concurrent, externalId, request.Profit);
         }
 
         return new ReceiveProfitEventResult(profitEvent.Status, Duplicate: false);
     }
 
-    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId)
+    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId, decimal Profit)
     {
         if (existing.UserExternalId != userExternalId)
             throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists for another user");
+
+        if (existing.Profit != Profit)
+            throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists with another profit");
 
         return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
     }
