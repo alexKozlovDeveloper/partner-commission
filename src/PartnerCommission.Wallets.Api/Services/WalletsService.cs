@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
@@ -60,15 +61,11 @@ public class WalletsService(
         if (message.Amount <= 0)
             throw new ValidationException("Amount must be positive");
 
-        var existing = await walletsDbContext.WalletEntries
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.CommissionId == message.CommissionId, ct);
+        var existing = await FindWalletEntryAsync(message.CommissionId, ct);
 
         if (existing is not null)
         {
-            if (existing.Amount != message.Amount || existing.UserExternalId != message.BeneficiaryExternalId)
-                throw new ConflictException($"Commission {message.CommissionId} already received with different data");
-
+            EnsureSameCommission(existing, message);
             return;
         }
 
@@ -83,6 +80,33 @@ public class WalletsService(
             ReceivedAtUtc = DateTime.UtcNow
         });
 
-        await walletsDbContext.SaveChangesAsync(ct);
+        try
+        {
+            await walletsDbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            walletsDbContext.ChangeTracker.Clear();
+
+            var concurrent = await FindWalletEntryAsync(message.CommissionId, ct)
+                ?? throw new InvalidOperationException($"Commission {message.CommissionId} violated primary key but was not found", ex);
+
+            EnsureSameCommission(concurrent, message);
+        }
+    }
+
+    private Task<WalletEntry?> FindWalletEntryAsync(Guid commissionId, CancellationToken ct)
+    {
+        var result = walletsDbContext.WalletEntries
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.CommissionId == commissionId, ct);
+
+        return result;
+    }
+
+    private static void EnsureSameCommission(WalletEntry existing, CommissionAccruedMessage message)
+    {
+        if (existing.Amount != message.Amount || existing.UserExternalId != message.BeneficiaryExternalId)
+            throw new ConflictException($"Commission {message.CommissionId} already received with different data");
     }
 }
