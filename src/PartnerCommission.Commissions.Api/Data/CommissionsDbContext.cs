@@ -59,8 +59,9 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
             e.ToTable("outbox_messages");
             e.HasKey(x => x.Id);
 
-            e.HasIndex(x => new { x.ProcessedAtUtc, x.CreatedAtUtc });
+            e.HasIndex(x => new { x.ProcessedAtUtc, x.NextAttemptAtUtc });
             e.Property(x => x.Type).HasMaxLength(128);
+            e.Property(x => x.LastError).HasMaxLength(1000);
         });
     }
 }

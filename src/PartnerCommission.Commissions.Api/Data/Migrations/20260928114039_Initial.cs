@@ -36,7 +36,10 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                     Type = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     Payload = table.Column<string>(type: "text", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ProcessedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    ProcessedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Attempts = table.Column<int>(type: "integer", nullable: false),
+                    NextAttemptAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastError = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -82,9 +85,9 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                 values: new object[] { "commission_schema", "Linear" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_outbox_messages_ProcessedAtUtc_CreatedAtUtc",
+                name: "IX_outbox_messages_ProcessedAtUtc_NextAttemptAtUtc",
                 table: "outbox_messages",
-                columns: new[] { "ProcessedAtUtc", "CreatedAtUtc" });
+                columns: new[] { "ProcessedAtUtc", "NextAttemptAtUtc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_profit_events_EventExternalId",

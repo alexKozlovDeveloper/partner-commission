@@ -59,7 +59,17 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Payload")
@@ -76,7 +86,7 @@ namespace PartnerCommission.Commissions.Api.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProcessedAtUtc", "CreatedAtUtc");
+                    b.HasIndex("ProcessedAtUtc", "NextAttemptAtUtc");
 
                     b.ToTable("outbox_messages", (string)null);
                 });
