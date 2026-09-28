@@ -94,7 +94,7 @@ public class UsersService(
         return users;
     }
 
-    private const long TreeWriteLockKey = 7_200_001;
+    private const long TreeWriteLockKey = 42;
     public async Task SetPartnerAsync(string externalId, SetPartnerRequest setPartnerModel, CancellationToken ct)
     {
         var partnerExternalId = setPartnerModel.PartnerExternalId;
