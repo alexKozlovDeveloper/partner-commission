@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Contracts;
+namespace PartnerCommission.Contracts;
 
 public sealed record CommissionAccruedMessage(
     Guid CommissionId,

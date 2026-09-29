@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Services;
 
@@ -11,11 +11,11 @@ public class AdminController(
     ) : ControllerBase
 {
     [HttpGet("commission-schema")]
-    public async Task<object> GetCommissionSchemaAsync(CancellationToken ct)
+    public async Task<IActionResult> GetCommissionSchemaAsync(CancellationToken ct)
     {
         var result = await commissionSchemaSettings.GetCurrentAsync(ct);
 
-        return result;
+        return Ok(result);
     }
 
     [HttpPut("commission-schema")]

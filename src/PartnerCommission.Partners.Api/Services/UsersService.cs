@@ -12,12 +12,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PartnerCommission.Partners.Api.Services;
 
-public class UsersService(
+internal sealed class UsersService(
     PartnersDbContext dbContext,
     UserTreeQueries treeQueries,
     IOptions<PartnersOptions> partnersOptions
     ) : IUserService
 {
+    private const long TreeWriteLockKey = 42;
+
     public async Task<UserResponse> GetAsync(string externalId, CancellationToken ct)
     {
         var user = await dbContext.Users
@@ -77,15 +79,12 @@ public class UsersService(
 
     private async Task<Guid?> FindUserIdAsync(string externalId, CancellationToken ct)
     {
-        var userData = await dbContext.Users
+        var result = await dbContext.Users
             .Where(x => x.ExternalId == externalId)
-            .Select(x => new
-            { 
-                x.Id 
-            })
+            .Select(x => (Guid?)x.Id)
             .FirstOrDefaultAsync(ct);
 
-        return userData?.Id ?? null;
+        return result;
     }
 
     public async Task<PagedResponse<UserResponse>> ListAsync(PageRequest page, CancellationToken ct)
@@ -103,7 +102,6 @@ public class UsersService(
         return users;
     }
 
-    private const long TreeWriteLockKey = 42;
     public async Task SetPartnerAsync(string externalId, SetPartnerRequest setPartnerModel, CancellationToken ct)
     {
         var partnerExternalId = setPartnerModel.PartnerExternalId;
@@ -238,6 +236,6 @@ public class UsersService(
             ancestors.Select(x => new AncestorItem(x.ExternalId, x.Level)).ToList());
 
         return result;
-    }    
+    }
 }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Services;
 

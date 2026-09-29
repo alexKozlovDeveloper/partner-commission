@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Exceptions;
@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PartnerCommission.Wallets.Api.Services;
 
-public class WalletsService(
+internal sealed class WalletsService(
     WalletsDbContext walletsDbContext
     ) : IWalletsService
 {

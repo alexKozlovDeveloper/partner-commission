@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
@@ -9,7 +9,7 @@ using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Commissions.Api.Services;
 
-public class CommissionsService(
+internal sealed class CommissionsService(
     CommissionsDbContext commissionsDbContext,
     ICommissionSchemaSettings commissionSchemaSettings,
     IWalletsClient walletsClient,
@@ -18,13 +18,15 @@ public class CommissionsService(
 {
     public async Task<ReceiveProfitEventResult> ReceiveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
     {
+        var profit = request.Profit!.Value;
+
         var existing = await commissionsDbContext.ProfitEvents
             .AsNoTracking()
             .Where(x => x.EventExternalId == request.EventExternalId)
             .FirstOrDefaultAsync(ct);
 
         if (existing is not null)
-            return ToDuplicateResult(existing, externalId, request.Profit);
+            return ToDuplicateResult(existing, externalId, profit);
 
         var currentSchemaType = await commissionSchemaSettings.GetCurrentAsync(ct);
 
@@ -34,11 +36,11 @@ public class CommissionsService(
             Status = ProfitEventStatus.Received,
             UserExternalId = externalId,
             EventExternalId = request.EventExternalId,
-            Profit = request.Profit,
+            Profit = profit,
             SchemaType = currentSchemaType,
             CreatedAtUtc = DateTime.UtcNow,
             Attempts = 0,
-            NextAttemptAtUtc = DateTime.UtcNow            
+            NextAttemptAtUtc = DateTime.UtcNow
         };
 
         commissionsDbContext.ProfitEvents.Add(profitEvent);
@@ -57,7 +59,7 @@ public class CommissionsService(
                 .FirstOrDefaultAsync(ct)
                 ?? throw new InvalidOperationException($"Profit event '{request.EventExternalId}' violated unique index but was not found", ex);
 
-            return ToDuplicateResult(concurrent, externalId, request.Profit);
+            return ToDuplicateResult(concurrent, externalId, profit);
         }
 
         CommissionsMetrics.ProfitEventsReceived.WithLabels("accepted").Inc();
@@ -122,9 +124,9 @@ public class CommissionsService(
             {
                 var paidAtUtc = payments?.GetValueOrDefault(x.Id);
 
-                var paymentStatus = payments is null 
+                var paymentStatus = payments is null
                     ? CommissionPaymentStatus.Unknown
-                    : paidAtUtc is not null 
+                    : paidAtUtc is not null
                         ? CommissionPaymentStatus.Paid
                         : CommissionPaymentStatus.Pending;
 

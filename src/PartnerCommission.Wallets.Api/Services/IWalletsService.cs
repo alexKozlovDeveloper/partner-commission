@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Contracts;
+using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Contracts;
 

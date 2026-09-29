@@ -1,12 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace PartnerCommission.Partners.Api
+namespace PartnerCommission.Partners.Api;
+
+public class PartnersOptions
 {
-    public class PartnersOptions
-    {
-        public const string Section = "Partners";
+    public const string Section = "Partners";
 
-        [Range(1, 25)]
-        public int MaxDepth { get; init; } = 10;
-    }
+    [Range(1, 25)]
+    public int MaxDepth { get; init; } = 10;
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using PartnerCommission.Shared.Diagnostics;
 using PartnerCommission.Shared.Exceptions;
 using Prometheus;
 using System.Diagnostics;
@@ -21,11 +22,13 @@ public static class ServiceDefaultsExtensions
 
     public static WebApplicationBuilder AddServiceDefaults(this WebApplicationBuilder builder)
     {
+        Tracing.EnsureListenerRegistered();
+
         AddLogging(builder);
 
         builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = ShutdownTimeout);
 
-        builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = 
+        builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails =
             ctx => ctx.ProblemDetails.Extensions.TryAdd("traceId", Activity.Current?.Id ?? ctx.HttpContext.TraceIdentifier));
 
         builder.Services.AddExceptionHandler<ApiExceptionHandler>();

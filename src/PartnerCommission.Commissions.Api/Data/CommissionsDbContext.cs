@@ -1,15 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Domain;
 
 namespace PartnerCommission.Commissions.Api.Data;
 
-public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options) 
+public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options)
     : DbContext(options)
 {
     public DbSet<Commission> Commissions => Set<Commission>();
     public DbSet<ProfitEvent> ProfitEvents => Set<ProfitEvent>();
-    public DbSet<Setting> Settings => Set<Setting>();   
+    public DbSet<Setting> Settings => Set<Setting>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -42,7 +42,6 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
 
             e.Property(x => x.Key).HasMaxLength(64);
             e.Property(x => x.Value).HasMaxLength(64);
-
         });
 
         modelBuilder.Entity<Commission>(e =>
@@ -56,6 +55,7 @@ public class CommissionsDbContext(DbContextOptions<CommissionsDbContext> options
                 .WithMany()
                 .HasForeignKey(x => x.ProfitEventId)
                 .OnDelete(DeleteBehavior.Restrict);
+
             e.Property(x => x.BeneficiaryExternalId).HasMaxLength(64);
 
             e.Property(x => x.Amount).HasPrecision(18, 4);

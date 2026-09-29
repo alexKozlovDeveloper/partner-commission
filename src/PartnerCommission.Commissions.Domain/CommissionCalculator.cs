@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Commissions.Domain;
+namespace PartnerCommission.Commissions.Domain;
 
 public sealed record BeneficiaryLine(
     string BeneficiaryExternalId,
@@ -26,7 +26,7 @@ public sealed class CommissionCalculator : ICommissionCalculator
 
         var lines = new List<BeneficiaryLineWithCommission>(beneficiaries.Count);
 
-        foreach (var beneficiary in beneficiaries) 
+        foreach (var beneficiary in beneficiaries)
         {
             var amount = Math.Round(
                 schema.RateFor(beneficiary.Level) * profit / 100m,

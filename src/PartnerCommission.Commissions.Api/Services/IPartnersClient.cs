@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Contracts;
+using PartnerCommission.Contracts;
 
 namespace PartnerCommission.Commissions.Api.Services;
 

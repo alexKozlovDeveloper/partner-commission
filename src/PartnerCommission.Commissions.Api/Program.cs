@@ -21,12 +21,9 @@ var partnersBaseAddress = builder.Configuration["Services:Partners"]
 var walletsBaseAddress = builder.Configuration["Services:Wallets"]
     ?? throw new InvalidOperationException("Services:Wallets is not configured");
 
-// Add services to the container.
-
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -34,13 +31,13 @@ builder.Services
     .AddHealthChecks()
     .AddNpgSql(connectionString, tags: [ServiceDefaultsExtensions.ReadyTag]);
 
-builder.Services.AddDbContext<CommissionsDbContext>(options => 
+builder.Services.AddDbContext<CommissionsDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5))
     );
 
 builder.Services.AddScoped<ICommissionsService, CommissionsService>();
 builder.Services.AddScoped<ICommissionSchemaSettings, CommissionSchemaSettings>();
-builder.Services.AddScoped<ICommissionCalculator, CommissionCalculator>();
+builder.Services.AddSingleton<ICommissionCalculator, CommissionCalculator>();
 
 var partnersHttpClient = builder.Services
     .AddHttpClient<IPartnersClient, PartnersClient>(client => { client.BaseAddress = new Uri(partnersBaseAddress); });
@@ -54,7 +51,6 @@ var walletsHttpClient = builder.Services
 walletsHttpClient.AddStandardResilienceHandler();
 walletsHttpClient.UseHttpClientMetrics();
 
-//builder.Services.AddSingleton<CommissionCalculator>();
 builder.Services.AddScoped<ProfitEventHandler>();
 builder.Services.AddScoped<OutboxMessageHandler>();
 
@@ -68,7 +64,6 @@ await CommissionsDbSeeder.SeedAsync(app.Services);
 
 app.UseServiceDefaults();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

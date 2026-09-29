@@ -4,6 +4,7 @@ using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Contracts;
+using PartnerCommission.Shared.Diagnostics;
 using System.Text.Json;
 
 namespace PartnerCommission.Commissions.Api.Background;
@@ -15,15 +16,16 @@ internal sealed class OutboxMessageHandler(
 {
     public async Task HandleAsync(Guid outboxMessageId, CancellationToken ct)
     {
+        using var activity = Tracing.Source.StartActivity("DispatchOutboxMessage");
+
         var message = await db.OutboxMessages
             .Where(x => x.Id == outboxMessageId)
             .SingleAsync(ct);
 
-        using var _ = logger.BeginScope(new Dictionary<string, object>
-        {
-            ["OutboxMessageId"] = message.Id,
-            ["OutboxMessageType"] = message.Type
-        });
+        activity?.SetTag("outbox.message_id", message.Id);
+        activity?.SetTag("outbox.message_type", message.Type);
+
+        using var _ = logger.BeginScope("OutboxMessageId: {OutboxMessageId}, Type: {OutboxMessageType}", message.Id, message.Type);
 
         try
         {
@@ -63,7 +65,7 @@ internal sealed class OutboxMessageHandler(
         {
             case CommissionAccruedMessage.MessageType:
                 {
-                    var payload = JsonSerializer.Deserialize<CommissionAccruedMessage>(message.Payload) 
+                    var payload = JsonSerializer.Deserialize<CommissionAccruedMessage>(message.Payload)
                         ?? throw new InvalidOperationException($"Outbox message {message.Id} of type '{message.Type}' has empty or null payload");
 
                     await walletsClient.SendCommissionAccruedAsync(payload, ct);

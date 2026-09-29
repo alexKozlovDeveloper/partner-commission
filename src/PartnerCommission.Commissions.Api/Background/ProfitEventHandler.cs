@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
 using PartnerCommission.Contracts;
+using PartnerCommission.Shared.Diagnostics;
 using Prometheus;
 using System.Text.Json;
 
@@ -20,14 +21,21 @@ internal sealed class ProfitEventHandler(
 
     public async Task HandleAsync(Guid profitEventId, CancellationToken ct)
     {
+        using var activity = Tracing.Source.StartActivity("ProcessProfitEvent");
+
         var profitEvent = await db.ProfitEvents
             .Where(x => x.Id == profitEventId)
             .SingleAsync(ct);
 
-        using var _ = logger.BeginScope(new Dictionary<string, object>
+        activity?.SetTag("event.external_id", profitEvent.EventExternalId);
+
+        using var _ = logger.BeginScope("EventExternalId: {EventExternalId}", profitEvent.EventExternalId);
+
+        if (profitEvent.Status is not (ProfitEventStatus.Received or ProfitEventStatus.Unresolved))
         {
-            ["EventExternalId"] = profitEvent.EventExternalId
-        });
+            logger.LogDebug("Event is already {Status}, skipping", profitEvent.Status);
+            return;
+        }
 
         using var timer = CommissionsMetrics.ProfitEventProcessingSeconds.NewTimer();
 
@@ -89,9 +97,9 @@ internal sealed class ProfitEventHandler(
                     db.Commissions.Add(commission);
 
                     var payload = new CommissionAccruedMessage(
-                        commission.Id, 
-                        profitEvent.EventExternalId, 
-                        commission.BeneficiaryExternalId, 
+                        commission.Id,
+                        profitEvent.EventExternalId,
+                        commission.BeneficiaryExternalId,
                         commission.Amount,
                         now);
 
@@ -117,12 +125,14 @@ internal sealed class ProfitEventHandler(
                 profitEvent.NextAttemptAtUtc = DateTime.UtcNow + UnresolvedRetryDelay;
             }
         }
-        else 
+        else
         {
             profitEvent.Status = ProfitEventStatus.Processed;
         }
-        
-        profitEvent.ProcessedAtUtc = DateTime.UtcNow;
+
+        if (profitEvent.Status == ProfitEventStatus.Processed)
+            profitEvent.ProcessedAtUtc = DateTime.UtcNow;
+
         profitEvent.LastError = null;
 
         await db.SaveChangesAsync(ct);

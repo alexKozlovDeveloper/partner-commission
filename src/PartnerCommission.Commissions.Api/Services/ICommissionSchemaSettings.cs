@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Commissions.Domain;
+using PartnerCommission.Commissions.Domain;
 
 namespace PartnerCommission.Commissions.Api.Services;
 

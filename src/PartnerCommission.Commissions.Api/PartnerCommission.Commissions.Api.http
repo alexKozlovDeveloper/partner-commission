@@ -1,6 +1,25 @@
-@PartnerCommission.Commissions.Api_HostAddress = http://localhost:5168
-
-GET {{PartnerCommission.Commissions.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+@host = http://localhost:5168
 
 ###
+POST {{host}}/users/u3/profit-events
+Content-Type: application/json
+
+{ "eventExternalId": "evt-1", "profit": 100 }
+
+###
+GET {{host}}/users/u3/profit-events?page=1&pageSize=20
+
+###
+GET {{host}}/users/u3/profit-events/evt-1
+
+###
+GET {{host}}/admin/commission-schema
+
+###
+PUT {{host}}/admin/commission-schema
+Content-Type: application/json
+
+{ "schemaType": "Fibonacci" }
+
+###
+GET {{host}}/metrics

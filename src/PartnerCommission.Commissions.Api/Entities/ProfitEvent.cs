@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Commissions.Domain;
+using PartnerCommission.Commissions.Domain;
 
 namespace PartnerCommission.Commissions.Api.Entities;
 
@@ -9,7 +9,7 @@ public class ProfitEvent
     public required string EventExternalId { get; set; }
     public required string UserExternalId { get; set; }
     public decimal Profit { get; set; }
-    public SchemaType SchemaType { get; set; }    
+    public SchemaType SchemaType { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public int Attempts { get; set; }
     public DateTime NextAttemptAtUtc { get; set; }

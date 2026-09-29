@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Services;
 using PartnerCommission.Shared.Pagination;
@@ -20,7 +20,7 @@ public class UsersController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken ct) 
+    public async Task<IActionResult> CreateAsync(CreateUserRequest request, CancellationToken ct)
     {
         var result = await userService.CreateAsync(request, ct);
 
@@ -40,7 +40,7 @@ public class UsersController(
     }
 
     [HttpPut("{externalId}/partner")]
-    public async Task<IActionResult> SetPartnerAsync(string externalId, SetPartnerRequest request, CancellationToken ct) 
+    public async Task<IActionResult> SetPartnerAsync(string externalId, SetPartnerRequest request, CancellationToken ct)
     {
         await userService.SetPartnerAsync(externalId, request, ct);
 

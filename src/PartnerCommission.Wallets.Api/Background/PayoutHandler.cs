@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Shared.Diagnostics;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
 using PartnerCommission.Wallets.Api.Observability;
@@ -12,10 +13,11 @@ internal sealed class PayoutHandler(
 {
     public async Task HandleAsync(string userExternalId, CancellationToken ct)
     {
-        using var _ = logger.BeginScope(new Dictionary<string, object>
-        {
-            ["UserExternalId"] = userExternalId
-        });
+        using var activity = Tracing.Source.StartActivity("PayoutUser");
+
+        activity?.SetTag("user.external_id", userExternalId);
+
+        using var _ = logger.BeginScope("UserExternalId: {UserExternalId}", userExternalId);
 
         try
         {

@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Partners.Api.Contracts;
+namespace PartnerCommission.Partners.Api.Contracts;
 
 public sealed record PartnersTreeResponse(
     string ExternalId,
@@ -7,11 +7,12 @@ public sealed record PartnersTreeResponse(
     );
 
 public sealed record AncestorDto(
-    string ExternalId, 
+    string ExternalId,
     int Level
     );
 
 public sealed record TreeNodeDto(
-    string ExternalId, 
-    int Level, IReadOnlyList<TreeNodeDto> Children
+    string ExternalId,
+    int Level,
+    IReadOnlyList<TreeNodeDto> Children
     );

@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Wallets.Api.Entities;
+namespace PartnerCommission.Wallets.Api.Entities;
 
 public class Wallet
 {

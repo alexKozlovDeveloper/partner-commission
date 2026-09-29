@@ -1,3 +1,3 @@
-﻿namespace PartnerCommission.Shared.Exceptions;
+namespace PartnerCommission.Shared.Exceptions;
 
 public sealed class ConflictException(string message) : Exception(message);

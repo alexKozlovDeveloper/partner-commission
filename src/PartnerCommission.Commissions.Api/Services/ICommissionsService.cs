@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Commissions.Api.Contracts;
+using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Shared.Pagination;
 
 namespace PartnerCommission.Commissions.Api.Services;

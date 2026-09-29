@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PartnerCommission.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Partners.Api.Services;
 
 namespace PartnerCommission.Partners.Api.Controllers;
@@ -11,10 +10,10 @@ public class InternalUsersController(
     ) : ControllerBase
 {
     [HttpGet("{externalId}/ancestors")]
-    public async Task<AncestorsResponse> GetAncestorsAsync(string externalId, CancellationToken ct)
+    public async Task<IActionResult> GetAncestorsAsync(string externalId, CancellationToken ct)
     {
         var result = await userService.GetAncestorsAsync(externalId, ct);
 
-        return result;
+        return Ok(result);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Commissions.Api.Entities;
+namespace PartnerCommission.Commissions.Api.Entities;
 
 public enum ProfitEventStatus
 {

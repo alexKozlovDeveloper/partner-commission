@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Observability;
+using PartnerCommission.Shared.Data;
 
 namespace PartnerCommission.Commissions.Api.Background;
 
@@ -13,6 +14,8 @@ internal sealed class ProfitEventProcessor(
     // TODO: move to app config
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
     private const int BatchSize = 50;
+
+    private const long ProcessLockKey = 55;
 
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
@@ -38,6 +41,18 @@ internal sealed class ProfitEventProcessor(
 
     private async Task ProcessPendingAsync(CancellationToken ct)
     {
+        await using var lockScope = scopeFactory.CreateAsyncScope();
+
+        var lockDbContext = lockScope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
+
+        await using var processLock = await AdvisoryLock.TryAcquireAsync(lockDbContext, ProcessLockKey, ct);
+
+        if (processLock is null)
+        {
+            logger.LogDebug("Profit events are processed by another instance, skipping tick");
+            return;
+        }
+
         List<Guid> ids;
 
         await using (var scope = scopeFactory.CreateAsyncScope())

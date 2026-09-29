@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Commissions.Domain;
+namespace PartnerCommission.Commissions.Domain;
 
 public class FibonacciSchema : ICommissionSchema
 {

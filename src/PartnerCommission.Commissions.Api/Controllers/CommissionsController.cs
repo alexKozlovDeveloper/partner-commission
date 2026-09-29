@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Shared.Pagination;
@@ -36,8 +36,8 @@ public class CommissionsController(
     {
         var result = await commissionsService.GetProfitEventAsync(externalId, eventExternalId, ct);
 
-        return result is null 
-            ? NotFound() 
+        return result is null
+            ? NotFound()
             : Ok(result);
     }
 }

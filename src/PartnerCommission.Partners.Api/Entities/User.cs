@@ -1,4 +1,4 @@
-﻿namespace PartnerCommission.Partners.Api.Entities;
+namespace PartnerCommission.Partners.Api.Entities;
 
 public class User
 {

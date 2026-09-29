@@ -1,4 +1,4 @@
-﻿using PartnerCommission.Contracts;
+using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Shared.Pagination;
 

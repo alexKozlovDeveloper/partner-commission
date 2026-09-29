@@ -11,7 +11,7 @@ public class CommissionCalculatorTests
         new("u3", 3),
     ];
 
-    private static IReadOnlyList<BeneficiaryLine> Levels(int count) => 
+    private static IReadOnlyList<BeneficiaryLine> Levels(int count) =>
         Enumerable
             .Range(1, count)
             .Select(level => new BeneficiaryLine($"u{level}", level))

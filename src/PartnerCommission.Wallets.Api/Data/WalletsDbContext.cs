@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Wallets.Api.Entities;
 
 namespace PartnerCommission.Wallets.Api.Data;

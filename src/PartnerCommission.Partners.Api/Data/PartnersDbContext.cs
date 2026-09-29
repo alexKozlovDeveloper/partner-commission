@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Partners.Api.Entities;
 
 namespace PartnerCommission.Partners.Api.Data;
