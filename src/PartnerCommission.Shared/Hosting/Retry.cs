@@ -11,7 +11,7 @@ public static class Retry
         var result = TimeSpan.FromSeconds(Math.Min(Math.Pow(2, attempts), MaxDelaySeconds));
 
         return result;
-    }        
+    }
 
     public static string ErrorText(Exception ex)
     {

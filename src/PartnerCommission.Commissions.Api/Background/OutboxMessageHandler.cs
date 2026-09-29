@@ -13,7 +13,8 @@ namespace PartnerCommission.Commissions.Api.Background;
 internal sealed class OutboxMessageHandler(
     CommissionsDbContext db,
     IWalletsClient walletsClient,
-    ILogger<OutboxMessageHandler> logger)
+    ILogger<OutboxMessageHandler> logger
+    )
 {
     public async Task HandleAsync(Guid outboxMessageId, CancellationToken ct)
     {

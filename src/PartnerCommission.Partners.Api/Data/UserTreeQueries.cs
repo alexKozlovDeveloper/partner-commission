@@ -10,7 +10,9 @@ public sealed class TreeRow
     public int Level { get; init; }
 }
 
-public sealed class UserTreeQueries(PartnersDbContext dbContext)
+public sealed class UserTreeQueries(
+    PartnersDbContext dbContext
+    )
 {
     public Task<List<TreeRow>> GetAncestorsAsync(Guid userId, int maxDepth, CancellationToken ct)
     {
@@ -56,7 +58,7 @@ public sealed class UserTreeQueries(PartnersDbContext dbContext)
             FROM down
             ORDER BY "Level", "ExternalId"
             """)
-         .ToListAsync(ct);
+            .ToListAsync(ct);
 
         return result;
     }

@@ -16,7 +16,8 @@ internal sealed class ProfitEventHandler(
     CommissionsDbContext db,
     IPartnersClient partnersClient,
     ICommissionCalculator calculator,
-    ILogger<ProfitEventHandler> logger)
+    ILogger<ProfitEventHandler> logger
+    )
 {
     private static readonly TimeSpan UnresolvedRetryDelay = TimeSpan.FromSeconds(30);
 
