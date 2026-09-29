@@ -1,6 +1,7 @@
 # Локальный запуск всей системы:
 #   docker compose up --build
 # Swagger: http://localhost:8081/swagger (partners), :8082 (commissions), :8083 (wallets)
+# Метрики: http://localhost:808x/metrics, Prometheus UI: http://localhost:9090
 # Полный сброс данных (в т.ч. чтобы заново отработал infra/postgres-init): docker compose down -v
 
 name: partner-commission
@@ -93,5 +94,22 @@ services:
       wallets:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.53.2
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - partners
+      - commissions
+      - wallets
+
 volumes:
   pgdata:
+  prometheus-data:
