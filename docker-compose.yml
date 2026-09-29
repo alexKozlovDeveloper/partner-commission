@@ -1,14 +1,7 @@
-# Локальный запуск всей системы:
-#   docker compose up --build
-# Swagger: http://localhost:8081/swagger (partners), :8082 (commissions), :8083 (wallets)
-# Метрики: http://localhost:808x/metrics, Prometheus UI: http://localhost:9090
-# Полный сброс данных (в т.ч. чтобы заново отработал infra/postgres-init): docker compose down -v
-
 name: partner-commission
 
 x-service-defaults: &service-defaults
   restart: unless-stopped
-  # не меньше HostOptions.ShutdownTimeout (30 с): иначе Docker убьёт процесс через 10 с, не дав доработать фоновым задачам
   stop_grace_period: 35s
   healthcheck:
     test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
@@ -18,9 +11,7 @@ x-service-defaults: &service-defaults
     start_period: 10s
 
 x-service-environment: &service-environment
-  # Development — чтобы был доступен Swagger; строки подключения ниже перекрывают appsettings.Development.json
   ASPNETCORE_ENVIRONMENT: Development
-  # формат логов: simple (читаемо в `docker compose logs`) или json (для сборщика логов)
   Logging__Console__FormatterName: simple
 
 services:
@@ -31,15 +22,11 @@ services:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
     ports:
-      # 5433 снаружи — чтобы не конфликтовать с локальным Postgres на 5432
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # создаёт базы partners / commissions / wallets при первой инициализации тома
       - ./infra/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      # -h 127.0.0.1: во время init-скриптов временный сервер слушает только сокет,
-      # поэтому проверка по TCP не пройдёт, пока базы не созданы
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "app", "-d", "postgres"]
       interval: 3s
       timeout: 3s
@@ -88,7 +75,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # для корректности не обязательно (вызовы соседей повторяются), но старт получается чище
       partners:
         condition: service_healthy
       wallets:
