@@ -1,0 +1,18 @@
+using PartnerCommission.Commissions.Domain;
+
+namespace PartnerCommission.Commissions.Api.Entities;
+
+public class ProfitEvent
+{
+    public Guid Id { get; set; }
+    public ProfitEventStatus Status { get; set; }
+    public required string EventExternalId { get; set; }
+    public required string UserExternalId { get; set; }
+    public decimal Profit { get; set; }
+    public SchemaType SchemaType { get; set; }
+    public DateTime CreatedAtUtc { get; set; }
+    public int Attempts { get; set; }
+    public DateTime NextAttemptAtUtc { get; set; }
+    public DateTime? ProcessedAtUtc { get; set; }
+    public string? LastError { get; set; }
+}

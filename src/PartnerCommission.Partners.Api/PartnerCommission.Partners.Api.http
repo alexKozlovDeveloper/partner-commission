@@ -1,0 +1,31 @@
+@host = http://localhost:5292
+
+###
+POST {{host}}/users
+Content-Type: application/json
+
+{ "externalId": "u1" }
+
+###
+GET {{host}}/users/u1
+
+###
+GET {{host}}/users?page=1&pageSize=20
+
+###
+PUT {{host}}/users/u2/partner
+Content-Type: application/json
+
+{ "partnerExternalId": "u1" }
+
+###
+DELETE {{host}}/users/u2/partner
+
+###
+GET {{host}}/users/u1/tree
+
+###
+GET {{host}}/internal/users/u2/ancestors
+
+###
+GET {{host}}/metrics

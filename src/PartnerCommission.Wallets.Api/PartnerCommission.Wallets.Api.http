@@ -1,0 +1,16 @@
+@host = http://localhost:5018
+
+###
+GET {{host}}/users/u1/wallet
+
+###
+GET {{host}}/users/u1/wallet/payouts?page=1&pageSize=20
+
+###
+POST {{host}}/internal/commissions/payments:query
+Content-Type: application/json
+
+{ "commissionIds": [] }
+
+###
+GET {{host}}/metrics

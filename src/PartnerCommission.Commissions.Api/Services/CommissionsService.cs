@@ -1,0 +1,179 @@
+using Microsoft.EntityFrameworkCore;
+using PartnerCommission.Commissions.Api.Contracts;
+using PartnerCommission.Commissions.Api.Data;
+using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Api.Observability;
+using PartnerCommission.Shared.Data;
+using PartnerCommission.Shared.Exceptions;
+using PartnerCommission.Shared.Pagination;
+
+namespace PartnerCommission.Commissions.Api.Services;
+
+internal sealed class CommissionsService(
+    CommissionsDbContext commissionsDbContext,
+    ICommissionSchemaSettings commissionSchemaSettings,
+    IWalletsClient walletsClient,
+    ILogger<CommissionsService> logger
+    ) : ICommissionsService
+{
+    public async Task<ReceiveProfitEventResult> ReceiveProfitEventAsync(string externalId, CreateEventRequest request, CancellationToken ct)
+    {
+        var profit = request.Profit!.Value;
+
+        var existing = await commissionsDbContext.ProfitEvents
+            .AsNoTracking()
+            .Where(x => x.EventExternalId == request.EventExternalId)
+            .FirstOrDefaultAsync(ct);
+
+        if (existing is not null)
+            return ToDuplicateResult(existing, externalId, profit);
+
+        var currentSchemaType = await commissionSchemaSettings.GetCurrentAsync(ct);
+
+        var profitEvent = new ProfitEvent
+        {
+            Id = Guid.NewGuid(),
+            Status = ProfitEventStatus.Received,
+            UserExternalId = externalId,
+            EventExternalId = request.EventExternalId,
+            Profit = profit,
+            SchemaType = currentSchemaType,
+            CreatedAtUtc = DateTime.UtcNow,
+            Attempts = 0,
+            NextAttemptAtUtc = DateTime.UtcNow
+        };
+
+        commissionsDbContext.ProfitEvents.Add(profitEvent);
+
+        try
+        {
+            await commissionsDbContext.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueViolation())
+        {
+            commissionsDbContext.ChangeTracker.Clear();
+
+            var concurrent = await commissionsDbContext.ProfitEvents
+                .AsNoTracking()
+                .Where(x => x.EventExternalId == request.EventExternalId)
+                .FirstOrDefaultAsync(ct)
+                ?? throw new InvalidOperationException($"Profit event '{request.EventExternalId}' violated unique index but was not found", ex);
+
+            return ToDuplicateResult(concurrent, externalId, profit);
+        }
+
+        CommissionsMetrics.ProfitEventsReceived.WithLabels("accepted").Inc();
+
+        return new ReceiveProfitEventResult(profitEvent.Status, Duplicate: false);
+    }
+
+    private static ReceiveProfitEventResult ToDuplicateResult(ProfitEvent existing, string userExternalId, decimal profit)
+    {
+        if (existing.UserExternalId != userExternalId)
+            throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists for another user");
+
+        if (existing.Profit != profit)
+            throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists with another profit");
+
+        CommissionsMetrics.ProfitEventsReceived.WithLabels("duplicate").Inc();
+
+        return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
+    }
+
+    public async Task<PagedResponse<ProfitEventResponse>> GetProfitEventsAsync(string externalId, PageRequest page, CancellationToken ct)
+    {
+        var result = await commissionsDbContext.ProfitEvents
+            .Where(x => x.UserExternalId == externalId)
+            .OrderByDescending(x => x.CreatedAtUtc)
+                .ThenByDescending(x => x.Id)
+            .Select(x => new ProfitEventResponse(
+                x.EventExternalId,
+                x.Profit,
+                x.SchemaType,
+                x.Status,
+                x.CreatedAtUtc,
+                x.ProcessedAtUtc
+                ))
+            .ToPagedAsync(page, ct);
+
+        return result;
+    }
+
+    public async Task<ProfitEventDetailsResponse?> GetProfitEventAsync(string externalId, string eventExternalId, CancellationToken ct)
+    {
+        var profitEvent = await commissionsDbContext.ProfitEvents
+            .Where(x => x.UserExternalId == externalId && x.EventExternalId == eventExternalId)
+            .FirstOrDefaultAsync(ct);
+
+        if (profitEvent is null)
+            return null;
+
+        var commissions = await commissionsDbContext.Commissions
+            .Where(x => x.ProfitEventId == profitEvent.Id)
+            .OrderBy(x => x.Level)
+            .ToListAsync(ct);
+
+        var commissionIds = commissions
+            .Select(x => x.Id)
+            .ToList();
+
+        var payments = await GetPaymentsAsync(commissionIds, ct);
+
+        var commissionDetails = commissions
+            .Select(x =>
+            {
+                var paidAtUtc = payments?.GetValueOrDefault(x.Id);
+
+                var paymentStatus = payments is null
+                    ? CommissionPaymentStatus.Unknown
+                    : paidAtUtc is not null
+                        ? CommissionPaymentStatus.Paid
+                        : CommissionPaymentStatus.Pending;
+
+                return new CommissionDetailsResponse(
+                    x.Id,
+                    x.BeneficiaryExternalId,
+                    x.Level,
+                    x.Amount,
+                    x.SchemaType,
+                    paymentStatus,
+                    paidAtUtc
+                    );
+            })
+            .ToList();
+
+        var result = new ProfitEventDetailsResponse(
+            profitEvent.EventExternalId,
+            profitEvent.UserExternalId,
+            profitEvent.Profit,
+            profitEvent.SchemaType,
+            profitEvent.Status,
+            profitEvent.CreatedAtUtc,
+            profitEvent.ProcessedAtUtc,
+            commissionDetails
+            );
+
+        return result;
+    }
+
+    private async Task<Dictionary<Guid, DateTime?>?> GetPaymentsAsync(IReadOnlyCollection<Guid> commissionIds, CancellationToken ct)
+    {
+        if (commissionIds.Count == 0)
+            return [];
+
+        try
+        {
+            var payments = await walletsClient.GetCommissionPaymentsAsync(commissionIds, ct);
+
+            var result = payments.ToDictionary(x => x.CommissionId, x => x.PaidAtUtc);
+
+            return result;
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Failed to get commission payments from Wallets, payment status is unknown");
+
+            return null;
+        }
+    }
+}
