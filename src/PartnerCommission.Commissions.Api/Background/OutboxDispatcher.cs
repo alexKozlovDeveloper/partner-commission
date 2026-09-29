@@ -16,6 +16,8 @@ internal sealed class OutboxDispatcher(
 
     protected override async Task RunOnceAsync(CancellationToken ct)
     {
+        await UpdatePendingMetricAsync(ct);
+
         List<Guid> ids;
 
         await using (var scope = ScopeFactory.CreateAsyncScope())
