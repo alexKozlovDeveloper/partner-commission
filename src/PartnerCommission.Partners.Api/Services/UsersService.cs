@@ -5,6 +5,7 @@ using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;
+using PartnerCommission.Partners.Api.Observability;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
 using System.ComponentModel.DataAnnotations;
@@ -37,7 +38,11 @@ public class UsersService(
         var existingId = await FindUserIdAsync(createUserModel.ExternalId, ct);
 
         if (existingId is not null)
+        {
+            PartnersMetrics.UsersCreated.WithLabels("duplicate").Inc();
+
             return new CreateUserResult(existingId.Value, Duplicate: true);
+        }
 
         var user = new User
         {
@@ -60,8 +65,12 @@ public class UsersService(
             var concurrentId = await FindUserIdAsync(createUserModel.ExternalId, ct)
                 ?? throw new InvalidOperationException($"User '{createUserModel.ExternalId}' violated unique index but was not found", ex);
 
+            PartnersMetrics.UsersCreated.WithLabels("duplicate").Inc();
+
             return new CreateUserResult(concurrentId, Duplicate: true);
         }
+
+        PartnersMetrics.UsersCreated.WithLabels("created").Inc();
 
         return new CreateUserResult(user.Id, Duplicate: false);
     }
@@ -100,11 +109,17 @@ public class UsersService(
         var partnerExternalId = setPartnerModel.PartnerExternalId;
 
         if (externalId == partnerExternalId)
+        {
+            PartnersMetrics.PartnerLinks.WithLabels("self").Inc();
+
             throw new ValidationException("User cannot be their own partner");
+        }
 
         var maxDepth = partnersOptions.Value.MaxDepth;
 
         var strategy = dbContext.Database.CreateExecutionStrategy();
+
+        var result = "linked";
 
         await strategy.ExecuteAsync(async () =>
         {
@@ -125,7 +140,10 @@ public class UsersService(
                 ?? throw new NotFoundException(nameof(User), partnerExternalId);
 
             if (user.ParentId == partner.Id)
+            {
+                result = "unchanged";
                 return;
+            }
 
             var partnerAncestors = await treeQueries.GetAncestorsAsync(partner.Id, maxDepth + 1, ct);
             var userSubtreeHeight = await treeQueries.GetSubtreeHeightAsync(user.Id, maxDepth + 1, ct);
@@ -148,12 +166,15 @@ public class UsersService(
                     break;
 
                 case PartnerLinkViolation.SelfReference:
+                    PartnersMetrics.PartnerLinks.WithLabels("self").Inc();
                     throw new ValidationException("User cannot be their own partner");
 
                 case PartnerLinkViolation.Cycle:
+                    PartnersMetrics.PartnerLinks.WithLabels("cycle").Inc();
                     throw new ConflictException($"User '{partnerExternalId}' is a descendant of '{externalId}': the link would create a cycle");
 
                 case PartnerLinkViolation.DepthExceeded:
+                    PartnersMetrics.PartnerLinks.WithLabels("depth_exceeded").Inc();
                     throw new ConflictException($"Linking '{externalId}' to '{partnerExternalId}' exceeds max tree depth of {maxDepth}");
 
                 default:
@@ -166,6 +187,8 @@ public class UsersService(
 
             await transaction.CommitAsync(ct);
         });
+
+        PartnersMetrics.PartnerLinks.WithLabels(result).Inc();
     }
 
     public async Task DeletePartnerAsync(string externalId, CancellationToken ct)

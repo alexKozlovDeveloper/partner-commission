@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using PartnerCommission.Shared.Exceptions;
+using Prometheus;
 using System.Diagnostics;
 
 namespace PartnerCommission.Shared.Hosting;
@@ -29,13 +30,15 @@ public static class ServiceDefaultsExtensions
 
         builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 
-        builder.Services.AddHealthChecks();
+        builder.Services.AddHealthChecks().ForwardToPrometheus();
 
         return builder;
     }
 
     public static WebApplication UseServiceDefaults(this WebApplication app)
     {
+        app.UseHttpMetrics();
+
         app.UseExceptionHandler();
 
         return app;
@@ -52,6 +55,8 @@ public static class ServiceDefaultsExtensions
         {
             Predicate = c => c.Tags.Contains(ReadyTag)
         });
+
+        app.MapMetrics();
 
         return app;
     }

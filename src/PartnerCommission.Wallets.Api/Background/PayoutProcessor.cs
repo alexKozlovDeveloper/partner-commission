@@ -2,6 +2,8 @@
 using PartnerCommission.Shared.Data;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
+using PartnerCommission.Wallets.Api.Observability;
+using Prometheus;
 
 namespace PartnerCommission.Wallets.Api.Background;
 
@@ -52,6 +54,8 @@ internal sealed class PayoutProcessor(
             return;
         }
 
+        using var timer = WalletsMetrics.PayoutRunSeconds.NewTimer();
+
         List<string> userExternalIds;
 
         await using (var scope = scopeFactory.CreateAsyncScope())
@@ -75,5 +79,19 @@ internal sealed class PayoutProcessor(
 
             await handler.HandleAsync(userExternalId, ct);
         }
+
+        await UpdatePendingMetricAsync(ct);
+    }
+
+    private async Task UpdatePendingMetricAsync(CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+
+        var walletsDbContext = scope.ServiceProvider.GetRequiredService<WalletsDbContext>();
+
+        var pending = await walletsDbContext.WalletEntries
+            .CountAsync(x => x.Status == WalletEntryStatus.Pending, ct);
+
+        WalletsMetrics.WalletEntriesPending.Set(pending);
     }
 }

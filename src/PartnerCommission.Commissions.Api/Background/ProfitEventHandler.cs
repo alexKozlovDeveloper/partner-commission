@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
 using PartnerCommission.Contracts;
+using Prometheus;
 using System.Text.Json;
 
 namespace PartnerCommission.Commissions.Api.Background;
@@ -27,9 +29,15 @@ internal sealed class ProfitEventHandler(
             ["EventExternalId"] = profitEvent.EventExternalId
         });
 
+        using var timer = CommissionsMetrics.ProfitEventProcessingSeconds.NewTimer();
+
         try
         {
-            await ProcessAsync(profitEvent, ct);            
+            await ProcessAsync(profitEvent, ct);
+
+            CommissionsMetrics.ProfitEventsProcessed
+                .WithLabels(profitEvent.Status == ProfitEventStatus.Unresolved ? "unresolved" : "processed")
+                .Inc();
 
             logger.LogInformation("Event handled with status {Status}", profitEvent.Status);
         }
@@ -42,11 +50,15 @@ internal sealed class ProfitEventHandler(
             db.ChangeTracker.Clear();
 
             await ScheduleRetryAsync(profitEvent.Id, profitEvent.Attempts + 1, ex, ct);
+
+            CommissionsMetrics.ProfitEventsProcessed.WithLabels("retry").Inc();
         }
     }
 
     private async Task ProcessAsync(ProfitEvent profitEvent, CancellationToken ct)
     {
+        IReadOnlyList<BeneficiaryLineWithCommission> lines = [];
+
         if (profitEvent.Profit > 0)
         {
             var ancestors = await partnersClient.GetAncestorsAsync(profitEvent.UserExternalId, ct);
@@ -59,7 +71,7 @@ internal sealed class ProfitEventHandler(
                     .Select(x => new BeneficiaryLine(x.ExternalId, x.Level))
                     .ToList();
 
-                var lines = calculator.Calculate(profitEvent.Profit, profitEvent.SchemaType, beneficiary);
+                lines = calculator.Calculate(profitEvent.Profit, profitEvent.SchemaType, beneficiary);
 
                 foreach (var line in lines)
                 {
@@ -114,6 +126,14 @@ internal sealed class ProfitEventHandler(
         profitEvent.LastError = null;
 
         await db.SaveChangesAsync(ct);
+
+        if (lines.Count > 0)
+        {
+            var schema = profitEvent.SchemaType.ToString();
+
+            CommissionsMetrics.CommissionsAccrued.WithLabels(schema).Inc(lines.Count);
+            CommissionsMetrics.CommissionsAccruedAmount.WithLabels(schema).Inc((double)lines.Sum(x => x.Amount));
+        }
     }
 
     private async Task ScheduleRetryAsync(Guid eventId, int attempts, Exception ex, CancellationToken ct)

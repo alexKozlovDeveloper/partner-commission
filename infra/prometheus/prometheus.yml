@@ -1,0 +1,21 @@
+# Prometheus опрашивает /metrics каждого сервиса внутри сети docker-compose.
+# UI: http://localhost:9090 — например: rate(partnercommission_commissions_accrued_total[1m])
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: partners
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["partners:8080"]
+
+  - job_name: commissions
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["commissions:8080"]
+
+  - job_name: wallets
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["wallets:8080"]

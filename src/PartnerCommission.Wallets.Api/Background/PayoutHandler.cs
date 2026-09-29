@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
+using PartnerCommission.Wallets.Api.Observability;
 
 namespace PartnerCommission.Wallets.Api.Background;
 
@@ -69,6 +70,9 @@ internal sealed class PayoutHandler(
         wallet.UpdatedAtUtc = now;
 
         await walletsDbContext.SaveChangesAsync(ct);
+
+        WalletsMetrics.Payouts.Inc(entries.Count);
+        WalletsMetrics.PayoutAmount.Inc((double)total);
 
         logger.LogInformation("Paid out {Count} commissions, total added amount {Total}, new balance {Balance}", entries.Count, total, wallet.Balance);
     }

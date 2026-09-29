@@ -5,6 +5,7 @@ using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
 using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Hosting;
+using Prometheus;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,13 +42,17 @@ builder.Services.AddScoped<ICommissionsService, CommissionsService>();
 builder.Services.AddScoped<ICommissionSchemaSettings, CommissionSchemaSettings>();
 builder.Services.AddScoped<ICommissionCalculator, CommissionCalculator>();
 
-builder.Services
-    .AddHttpClient<IPartnersClient, PartnersClient>(client => { client.BaseAddress = new Uri(partnersBaseAddress); })
-    .AddStandardResilienceHandler();
+var partnersHttpClient = builder.Services
+    .AddHttpClient<IPartnersClient, PartnersClient>(client => { client.BaseAddress = new Uri(partnersBaseAddress); });
 
-builder.Services
-    .AddHttpClient<IWalletsClient, WalletsClient>(client => { client.BaseAddress = new Uri(walletsBaseAddress); })
-    .AddStandardResilienceHandler();
+partnersHttpClient.AddStandardResilienceHandler();
+partnersHttpClient.UseHttpClientMetrics();
+
+var walletsHttpClient = builder.Services
+    .AddHttpClient<IWalletsClient, WalletsClient>(client => { client.BaseAddress = new Uri(walletsBaseAddress); });
+
+walletsHttpClient.AddStandardResilienceHandler();
+walletsHttpClient.UseHttpClientMetrics();
 
 //builder.Services.AddSingleton<CommissionCalculator>();
 builder.Services.AddScoped<ProfitEventHandler>();

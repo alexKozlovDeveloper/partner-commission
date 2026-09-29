@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
+using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Shared.Data;
 
 namespace PartnerCommission.Commissions.Api.Background;
@@ -73,5 +74,19 @@ internal sealed class OutboxDispatcher(
 
             await handler.HandleAsync(id, ct);
         }
+
+        await UpdatePendingMetricAsync(ct);
+    }
+
+    private async Task UpdatePendingMetricAsync(CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+
+        var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
+
+        var pending = await commissionsDbContext.OutboxMessages
+            .CountAsync(x => x.ProcessedAtUtc == null, ct);
+
+        CommissionsMetrics.OutboxPending.Set(pending);
     }
 }

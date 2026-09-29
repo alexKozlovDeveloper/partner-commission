@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Api.Observability;
 
 namespace PartnerCommission.Commissions.Api.Background;
 
@@ -60,5 +61,19 @@ internal sealed class ProfitEventProcessor(
 
             await handler.HandleAsync(id, ct);
         }
+
+        await UpdatePendingMetricAsync(ct);
+    }
+
+    private async Task UpdatePendingMetricAsync(CancellationToken ct)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+
+        var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
+
+        var pending = await commissionsDbContext.ProfitEvents
+            .CountAsync(x => x.Status == ProfitEventStatus.Received || x.Status == ProfitEventStatus.Unresolved, ct);
+
+        CommissionsMetrics.ProfitEventsPending.Set(pending);
     }
 }

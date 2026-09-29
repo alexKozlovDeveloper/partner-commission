@@ -3,6 +3,7 @@ using Npgsql;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
 
@@ -59,6 +60,8 @@ public class CommissionsService(
             return ToDuplicateResult(concurrent, externalId, request.Profit);
         }
 
+        CommissionsMetrics.ProfitEventsReceived.WithLabels("accepted").Inc();
+
         return new ReceiveProfitEventResult(profitEvent.Status, Duplicate: false);
     }
 
@@ -69,6 +72,8 @@ public class CommissionsService(
 
         if (existing.Profit != profit)
             throw new ConflictException($"Profit event '{existing.EventExternalId}' already exists with another profit");
+
+        CommissionsMetrics.ProfitEventsReceived.WithLabels("duplicate").Inc();
 
         return new ReceiveProfitEventResult(existing.Status, Duplicate: true);
     }

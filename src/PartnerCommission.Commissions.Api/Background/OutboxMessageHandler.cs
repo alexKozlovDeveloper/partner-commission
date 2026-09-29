@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
+using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Contracts;
 using System.Text.Json;
@@ -28,6 +29,8 @@ internal sealed class OutboxMessageHandler(
         {
             await ProcessAsync(message, ct);
 
+            CommissionsMetrics.OutboxMessagesSent.WithLabels("sent").Inc();
+
             logger.LogInformation("Outbox message sent");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -39,6 +42,8 @@ internal sealed class OutboxMessageHandler(
             db.ChangeTracker.Clear();
 
             await ScheduleRetryAsync(message.Id, message.Attempts + 1, ex, ct);
+
+            CommissionsMetrics.OutboxMessagesSent.WithLabels("failed").Inc();
         }
     }
 

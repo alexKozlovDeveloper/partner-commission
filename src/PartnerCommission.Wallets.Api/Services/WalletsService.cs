@@ -6,6 +6,7 @@ using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Contracts;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
+using PartnerCommission.Wallets.Api.Observability;
 using System.ComponentModel.DataAnnotations;
 
 namespace PartnerCommission.Wallets.Api.Services;
@@ -66,6 +67,8 @@ public class WalletsService(
         if (existing is not null)
         {
             EnsureSameCommission(existing, message);
+
+            WalletsMetrics.CommissionsReceived.WithLabels("duplicate").Inc();
             return;
         }
 
@@ -92,7 +95,12 @@ public class WalletsService(
                 ?? throw new InvalidOperationException($"Commission {message.CommissionId} violated primary key but was not found", ex);
 
             EnsureSameCommission(concurrent, message);
+
+            WalletsMetrics.CommissionsReceived.WithLabels("duplicate").Inc();
+            return;
         }
+
+        WalletsMetrics.CommissionsReceived.WithLabels("created").Inc();
     }
 
     private Task<WalletEntry?> FindWalletEntryAsync(Guid commissionId, CancellationToken ct)
@@ -107,6 +115,10 @@ public class WalletsService(
     private static void EnsureSameCommission(WalletEntry existing, CommissionAccruedMessage message)
     {
         if (existing.Amount != message.Amount || existing.UserExternalId != message.BeneficiaryExternalId)
+        {
+            WalletsMetrics.CommissionsReceived.WithLabels("conflict").Inc();
+
             throw new ConflictException($"Commission {message.CommissionId} already received with different data");
+        }
     }
 }
