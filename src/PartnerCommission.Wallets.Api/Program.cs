@@ -28,7 +28,7 @@ builder.Services.AddScoped<IWalletsService, WalletsService>();
 
 builder.Services.AddScoped<PayoutHandler>();
 
-builder.Services.AddHostedService<PayoutProcessor>();
+builder.Services.AddPollingJob<PayoutProcessor>();
 
 var app = builder.Build();
 

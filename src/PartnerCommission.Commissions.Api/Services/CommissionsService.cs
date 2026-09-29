@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using PartnerCommission.Commissions.Api.Contracts;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Observability;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
 
@@ -49,7 +49,7 @@ internal sealed class CommissionsService(
         {
             await commissionsDbContext.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException ex) when (ex.IsUniqueViolation())
         {
             commissionsDbContext.ChangeTracker.Clear();
 

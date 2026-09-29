@@ -5,6 +5,7 @@ using PartnerCommission.Commissions.Api.Observability;
 using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Diagnostics;
+using PartnerCommission.Shared.Hosting;
 using System.Text.Json;
 
 namespace PartnerCommission.Commissions.Api.Background;
@@ -84,10 +85,10 @@ internal sealed class OutboxMessageHandler(
             .Where(x => x.Id == outboxMessageId)
             .SingleAsync(ct);
 
-        var delay = TimeSpan.FromSeconds(Math.Min(Math.Pow(2, attempts), 300));
+        var delay = Retry.NextDelay(attempts);
 
         message.Attempts = attempts;
-        message.LastError = ex.Message.Length > 1000 ? ex.Message[..1000] : ex.Message;
+        message.LastError = Retry.ErrorText(ex);
         message.NextAttemptAtUtc = DateTime.UtcNow + delay;
 
         await db.SaveChangesAsync(ct);

@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Npgsql;
 using PartnerCommission.Contracts;
 using PartnerCommission.Partners.Api.Contracts;
 using PartnerCommission.Partners.Api.Data;
 using PartnerCommission.Partners.Api.Entities;
 using PartnerCommission.Partners.Api.Observability;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
 using System.ComponentModel.DataAnnotations;
@@ -60,7 +60,7 @@ internal sealed class UsersService(
         {
             await dbContext.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException ex) when (ex.IsUniqueViolation())
         {
             dbContext.ChangeTracker.Clear();
 

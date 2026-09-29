@@ -307,7 +307,7 @@ then `docker compose start wallets` and watch it drop to 0.
 | `ConnectionStrings:Db` | each service | `appsettings.Development.json`, overridden in compose |
 | `Services:Partners`, `Services:Wallets` | Commissions | `http://partners:8080/`, `http://wallets:8080/` in compose |
 | `Partners:MaxDepth` | Partners | 10 (allowed 1..25) |
-| Polling interval / batch size | background jobs | events 5 s, outbox 5 s, payouts 15 s; batch 50 |
+| `BackgroundJobs:{Job}:PollInterval`, `BackgroundJobs:{Job}:BatchSize` | `ProfitEventProcessor`, `OutboxDispatcher` (Commissions), `PayoutProcessor` (Wallets) | 5 s / 5 s / 15 s; batch 50; validated on startup |
 | Retry backoff | events, outbox | 2^attempt s, max 300 s; unresolved events every 30 s |
 
 ---

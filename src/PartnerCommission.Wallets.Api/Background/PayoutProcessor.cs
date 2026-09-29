@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using PartnerCommission.Shared.Data;
+using Microsoft.Extensions.Options;
+using PartnerCommission.Shared.Hosting;
 using PartnerCommission.Wallets.Api.Data;
 using PartnerCommission.Wallets.Api.Entities;
 using PartnerCommission.Wallets.Api.Observability;
@@ -9,56 +10,19 @@ namespace PartnerCommission.Wallets.Api.Background;
 
 internal sealed class PayoutProcessor(
     IServiceScopeFactory scopeFactory,
+    IOptionsMonitor<PollingJobOptions> options,
     ILogger<PayoutProcessor> logger
-    ) : BackgroundService
+    ) : PollingBackgroundService<WalletsDbContext>(scopeFactory, options, logger)
 {
-    // TODO: move to app config
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(15);
-    private const int BatchSize = 50;
+    protected override long LockKey => 53;
 
-    private const long PayoutLockKey = 53;
-
-    protected override async Task ExecuteAsync(CancellationToken ct)
+    protected override async Task RunOnceAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(PollInterval);
-
-        do
-        {
-            try
-            {
-                await PayoutPendingAsync(ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Payout loop failed");
-            }
-        }
-        while (await timer.WaitForNextTickAsync(ct));
-    }
-
-    private async Task PayoutPendingAsync(CancellationToken ct)
-    {
-        await using var lockScope = scopeFactory.CreateAsyncScope();
-
-        var lockDbContext = lockScope.ServiceProvider.GetRequiredService<WalletsDbContext>();
-
-        await using var payoutLock = await AdvisoryLock.TryAcquireAsync(lockDbContext, PayoutLockKey, ct);
-
-        if (payoutLock is null)
-        {
-            logger.LogDebug("Payout is running on another instance, skipping tick");
-            return;
-        }
-
         using var timer = WalletsMetrics.PayoutRunSeconds.NewTimer();
 
         List<string> userExternalIds;
 
-        await using (var scope = scopeFactory.CreateAsyncScope())
+        await using (var scope = ScopeFactory.CreateAsyncScope())
         {
             var walletsDbContext = scope.ServiceProvider.GetRequiredService<WalletsDbContext>();
 
@@ -67,13 +31,13 @@ internal sealed class PayoutProcessor(
                 .Select(x => x.UserExternalId)
                 .Distinct()
                 .OrderBy(x => x)
-                .Take(BatchSize)
+                .Take(Options.BatchSize)
                 .ToListAsync(ct);
         }
 
         foreach (var userExternalId in userExternalIds)
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
+            await using var scope = ScopeFactory.CreateAsyncScope();
 
             var handler = scope.ServiceProvider.GetRequiredService<PayoutHandler>();
 
@@ -85,7 +49,7 @@ internal sealed class PayoutProcessor(
 
     private async Task UpdatePendingMetricAsync(CancellationToken ct)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
+        await using var scope = ScopeFactory.CreateAsyncScope();
 
         var walletsDbContext = scope.ServiceProvider.GetRequiredService<WalletsDbContext>();
 

@@ -1,61 +1,25 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using PartnerCommission.Commissions.Api.Data;
 using PartnerCommission.Commissions.Api.Entities;
 using PartnerCommission.Commissions.Api.Observability;
-using PartnerCommission.Shared.Data;
+using PartnerCommission.Shared.Hosting;
 
 namespace PartnerCommission.Commissions.Api.Background;
 
 internal sealed class ProfitEventProcessor(
     IServiceScopeFactory scopeFactory,
+    IOptionsMonitor<PollingJobOptions> options,
     ILogger<ProfitEventProcessor> logger
-    ) : BackgroundService
+    ) : PollingBackgroundService<CommissionsDbContext>(scopeFactory, options, logger)
 {
-    // TODO: move to app config
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
-    private const int BatchSize = 50;
+    protected override long LockKey => 55;
 
-    private const long ProcessLockKey = 55;
-
-    protected override async Task ExecuteAsync(CancellationToken ct)
+    protected override async Task RunOnceAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(PollInterval);
-
-        do
-        {
-            try
-            {
-                await ProcessPendingAsync(ct);
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Profit event processing loop failed");
-            }
-        }
-        while (await timer.WaitForNextTickAsync(ct));
-    }
-
-    private async Task ProcessPendingAsync(CancellationToken ct)
-    {
-        await using var lockScope = scopeFactory.CreateAsyncScope();
-
-        var lockDbContext = lockScope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
-
-        await using var processLock = await AdvisoryLock.TryAcquireAsync(lockDbContext, ProcessLockKey, ct);
-
-        if (processLock is null)
-        {
-            logger.LogDebug("Profit events are processed by another instance, skipping tick");
-            return;
-        }
-
         List<Guid> ids;
 
-        await using (var scope = scopeFactory.CreateAsyncScope())
+        await using (var scope = ScopeFactory.CreateAsyncScope())
         {
             var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
 
@@ -64,13 +28,13 @@ internal sealed class ProfitEventProcessor(
                     && x.NextAttemptAtUtc <= DateTime.UtcNow)
                 .OrderBy(x => x.CreatedAtUtc)
                 .Select(x => x.Id)
-                .Take(BatchSize)
+                .Take(Options.BatchSize)
                 .ToListAsync(ct);
         }
 
         foreach (var id in ids)
         {
-            await using var scope = scopeFactory.CreateAsyncScope();
+            await using var scope = ScopeFactory.CreateAsyncScope();
 
             var handler = scope.ServiceProvider.GetRequiredService<ProfitEventHandler>();
 
@@ -82,7 +46,7 @@ internal sealed class ProfitEventProcessor(
 
     private async Task UpdatePendingMetricAsync(CancellationToken ct)
     {
-        await using var scope = scopeFactory.CreateAsyncScope();
+        await using var scope = ScopeFactory.CreateAsyncScope();
 
         var commissionsDbContext = scope.ServiceProvider.GetRequiredService<CommissionsDbContext>();
 

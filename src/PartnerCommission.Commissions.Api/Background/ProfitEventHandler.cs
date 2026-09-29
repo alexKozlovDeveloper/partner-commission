@@ -6,6 +6,7 @@ using PartnerCommission.Commissions.Api.Services;
 using PartnerCommission.Commissions.Domain;
 using PartnerCommission.Contracts;
 using PartnerCommission.Shared.Diagnostics;
+using PartnerCommission.Shared.Hosting;
 using Prometheus;
 using System.Text.Json;
 
@@ -152,10 +153,10 @@ internal sealed class ProfitEventHandler(
              .Where(x => x.Id == eventId)
              .SingleAsync(ct);
 
-        var delay = TimeSpan.FromSeconds(Math.Min(Math.Pow(2, attempts), 300));
+        var delay = Retry.NextDelay(attempts);
 
         profitEvent.Attempts = attempts;
-        profitEvent.LastError = ex.Message.Length > 1000 ? ex.Message[..1000] : ex.Message;
+        profitEvent.LastError = Retry.ErrorText(ex);
         profitEvent.NextAttemptAtUtc = DateTime.UtcNow + delay;
 
         await db.SaveChangesAsync(ct);

@@ -54,8 +54,8 @@ walletsHttpClient.UseHttpClientMetrics();
 builder.Services.AddScoped<ProfitEventHandler>();
 builder.Services.AddScoped<OutboxMessageHandler>();
 
-builder.Services.AddHostedService<ProfitEventProcessor>();
-builder.Services.AddHostedService<OutboxDispatcher>();
+builder.Services.AddPollingJob<ProfitEventProcessor>();
+builder.Services.AddPollingJob<OutboxDispatcher>();
 
 var app = builder.Build();
 

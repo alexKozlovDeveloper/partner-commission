@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using PartnerCommission.Contracts;
+using PartnerCommission.Shared.Data;
 using PartnerCommission.Shared.Exceptions;
 using PartnerCommission.Shared.Pagination;
 using PartnerCommission.Wallets.Api.Contracts;
@@ -87,7 +87,7 @@ internal sealed class WalletsService(
         {
             await walletsDbContext.SaveChangesAsync(ct);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException ex) when (ex.IsUniqueViolation())
         {
             walletsDbContext.ChangeTracker.Clear();
 
