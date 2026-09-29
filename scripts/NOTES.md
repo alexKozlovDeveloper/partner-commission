@@ -1,137 +1,168 @@
-# Dev notes — local environment guide
+# Dev notes
 
-Full guide to get the development environment running on a fresh machine,
-plus a quick command reference for daily work.
+Day-to-day reference for working on the code. For what the system does and why, see the root `README.md`.
+
+There are two ways to run the system:
+
+| Mode | When | Postgres | Services |
+|---|---|---|---|
+| **Docker Compose** | check the whole system, demo, reviewers | container `postgres`, host port `5433` | containers, ports `8081` / `8082` / `8083` |
+| **Local dev** | debugging, running from the IDE | container `pc-postgres`, host port `5432` | `dotnet run`, ports `5292` / `5168` / `5018` |
+
+The two modes do not conflict and can run at the same time.
 
 ---
 
-## 0. New machine setup (from zero to running)
-
-### Prerequisites (install once)
+## Prerequisites
 
 | Tool | Why | Check |
 |---|---|---|
-| .NET SDK 8.x | build & run services | `dotnet --list-sdks` |
-| Docker Desktop | Postgres container (later: whole system via compose) | `docker --version` |
-| Git | obviously | `git --version` |
+| .NET SDK 8.x | build, run, test | `dotnet --list-sdks` |
+| Docker Desktop | Postgres, compose stack | `docker --version` |
+| EF Core tools (optional) | add / remove migrations | `dotnet ef --version` |
 | DBeaver (optional) | browse the databases | — |
-| Git Bash (comes with Git on Windows) | run `.sh` scripts | — |
-
-### Steps
-
-```bash
-git clone <repo-url> && cd partner-commission
-```
-
-1) EF tooling (once per machine):
 
 ```bash
 dotnet tool install -g dotnet-ef --version 8.*
 ```
 
-(restart the terminal afterwards so PATH picks it up)
+---
 
-2) Start Postgres in Docker and create the service databases:
-
-```bash
-./scripts/dev-db-up.sh
-```
-
-(manual one-liner alternative — see "Start Postgres" below)
-
-3) Build and apply migrations:
+## Docker Compose
 
 ```bash
-dotnet build
+docker compose up --build
 ```
 
 ```bash
-dotnet ef database update --project src/PartnerCommission.Partners.Api
+docker compose down
 ```
 
 ```bash
-dotnet ef database update --project src/PartnerCommission.Commissions.Api
+docker compose down -v
 ```
+
+- `down -v` also removes the data volumes; use it to start from a clean state.
+- `infra/postgres-init/` runs only when the Postgres volume is created, so new databases appear only after `down -v`.
+- Swagger: `http://localhost:8081/swagger`, `:8082`, `:8083`. Prometheus: `http://localhost:9090`.
+- Rebuild a single service after a code change:
 
 ```bash
-dotnet ef database update --project src/PartnerCommission.Wallets.Api
+docker compose up -d --build commissions
 ```
 
-4) Verify: run a service and check health (port — see launchSettings.json
-of the service):
+- Logs of one service, follow mode:
 
 ```bash
-dotnet run --project src/PartnerCommission.Partners.Api
+docker compose logs -f commissions
 ```
-
-`/health/live` → 200 always; `/health/ready` → 200 with Postgres up,
-503 after `docker stop pc-postgres`. If that holds — the environment works.
 
 ---
 
-## Start Postgres container (manual one-liner)
+## Local dev
+
+### 1. Postgres container (once per machine)
 
 ```bash
 docker run -d --name pc-postgres -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app -p 5432:5432 -v pc-pgdata:/var/lib/postgresql/data postgres:16-alpine
 ```
 
-Notes:
-- `dotnet ef database update` creates the target database itself if it does
-  not exist — no manual `CREATE DATABASE` needed for the EF path.
-  The SQL in `../infra/postgres-init/` is for docker-compose later
-  (auto-applied on first volume initialization) and as explicit documentation
-  of which databases the system needs.
-- Port 5432 already taken (local PostgreSQL service is a common culprit on
-  Windows): map another one, e.g. `-p 5433:5432`, and change the port in
-  every appsettings.json connection string.
+### 2. Databases (once)
 
-## Container lifecycle
+Services apply their migrations on startup, but the database itself must already exist.
 
 ```bash
-docker start pc-postgres      # after reboot (container does not autostart)
-docker stop pc-postgres       # stop; data survives in the pc-pgdata volume
-docker logs pc-postgres       # if something looks wrong
-docker rm -f pc-postgres && docker volume rm pc-pgdata   # full reset
+docker exec pc-postgres psql -U app -d postgres -c "CREATE DATABASE partners" -c "CREATE DATABASE commissions" -c "CREATE DATABASE wallets"
 ```
+
+(`dotnet ef database update --project src/<Service>.Api` also creates a missing database.)
+
+### 3. Run the services
+
+```bash
+dotnet run --project src/PartnerCommission.Partners.Api
+```
+
+```bash
+dotnet run --project src/PartnerCommission.Wallets.Api
+```
+
+```bash
+dotnet run --project src/PartnerCommission.Commissions.Api
+```
+
+Connection strings and service URLs for this mode are in each `appsettings.Development.json`.
+Each API project has a `.http` file with ready-to-send requests.
+
+### Container lifecycle
+
+```bash
+docker start pc-postgres
+```
+
+```bash
+docker stop pc-postgres
+```
+
+```bash
+docker rm -f pc-postgres && docker volume rm pc-pgdata
+```
+
+The container does not autostart after a reboot. The last command is a full reset (data is lost).
+
+---
+
+## Tests
+
+```bash
+dotnet test
+```
+
+- `PartnerCommission.Commissions.Domain.Tests` — schemas and the commission calculator.
+- `PartnerCommission.Partners.Api.Tests` — partner tree rules (self-reference, cycle, depth).
+
+If the services are running locally, `dotnet test` / `dotnet build` may fail with "file is locked":
+stop the services, or build into another folder with `-o <dir>`.
+
+---
 
 ## EF migrations
 
-All commands run from the repo root (where the .sln is) — `--project` paths
-are relative to it.
+Commands run from the repository root. Migrations are applied automatically on service startup
+(`MigrateWithLockAsync`), so after adding one just restart the service.
 
-One-time per project (already done, listed for completeness):
-
-```bash
-dotnet add src/PartnerCommission.Partners.Api package Microsoft.EntityFrameworkCore.Design --version 8.0.11
-```
-
-Add a new migration after changing entities (`-o Data/Migrations` keeps
-migrations next to the DbContext; only matters for the FIRST migration of a
-project — later ones follow the existing folder automatically):
+Add a migration:
 
 ```bash
-dotnet ef migrations add <Name> --project src/PartnerCommission.Partners.Api -o Data/Migrations
+dotnet ef migrations add <Name> --project src/PartnerCommission.Partners.Api
 ```
 
 ```bash
-dotnet ef migrations add <Name> --project src/PartnerCommission.Commissions.Api -o Data/Migrations
+dotnet ef migrations add <Name> --project src/PartnerCommission.Commissions.Api
 ```
 
 ```bash
-dotnet ef migrations add <Name> --project src/PartnerCommission.Wallets.Api -o Data/Migrations
+dotnet ef migrations add <Name> --project src/PartnerCommission.Wallets.Api
 ```
 
-Undo the LAST migration if it is not applied to the database yet:
+Check that the model and the migrations are in sync:
 
 ```bash
-dotnet ef migrations remove --project src/PartnerCommission.Partners.Api
+dotnet ef migrations has-pending-model-changes --project src/PartnerCommission.Commissions.Api
 ```
 
-### Recreate a service database from scratch (dev-only!)
+Undo the last migration (only if it is not applied anywhere yet):
 
-After changing entities pre-release it is fine to rebuild the single Initial
-migration instead of stacking fixup migrations. Legal ONLY while nobody else
-has applied the schema and the data is disposable. Example for Commissions:
+```bash
+dotnet ef migrations remove --project src/PartnerCommission.Commissions.Api
+```
+
+Review every generated migration before committing: it runs automatically on startup,
+so an unexpected `DropColumn` or `DeleteData` is applied silently.
+
+### Recreate a service schema from scratch (dev only)
+
+Allowed only while the data is disposable and nobody else has applied the schema. Example for Commissions:
 
 ```bash
 dotnet ef database drop --project src/PartnerCommission.Commissions.Api -f
@@ -145,43 +176,57 @@ dotnet ef migrations remove --project src/PartnerCommission.Commissions.Api
 dotnet ef migrations add Initial --project src/PartnerCommission.Commissions.Api -o Data/Migrations
 ```
 
-```bash
-dotnet ef database update --project src/PartnerCommission.Commissions.Api
-```
+The default commission schema (`settings.commission_schema = Linear`) is inserted on startup if missing.
 
-Notes: other services' databases are untouched; review the regenerated
-migration (indexes, maxlength, precision); startup seeding (current_schema)
-re-inserts itself on the next run — that is what "insert if missing" is for.
+---
 
-Apply migrations (creates the database itself if missing; re-running is a
-no-op):
+## Databases
+
+psql, local dev:
 
 ```bash
-dotnet ef database update --project src/PartnerCommission.Partners.Api
+docker exec -it pc-postgres psql -U app -d commissions
 ```
+
+psql, compose:
 
 ```bash
-dotnet ef database update --project src/PartnerCommission.Commissions.Api
+docker compose exec postgres psql -U app -d commissions
 ```
 
-```bash
-dotnet ef database update --project src/PartnerCommission.Wallets.Api
-```
+Inside psql: `\l` databases, `\dt` tables, `\d profit_events` describe a table, `\q` quit.
+Column names are PascalCase and must be quoted: `select "Status", count(*) from profit_events group by 1;`
 
-## Poke around the database (psql)
+DBeaver: PostgreSQL, host `127.0.0.1`, port `5432` (local dev) or `5433` (compose), database `postgres`,
+user/password `app`/`app`. Enable "Show all databases" in the connection settings to see all three databases.
 
-```bash
-docker exec -it pc-postgres psql -U app -d partners
-```
+---
 
-Inside psql: `\l` — list databases, `\dt` — list tables, `\d users` — describe
-table, `\q` — quit.
+## Configuration
 
-## GUI client (DBeaver)
+| Key | Service | Default |
+|---|---|---|
+| `ConnectionStrings:Db` | all | `appsettings.Development.json` / compose env |
+| `Services:Partners`, `Services:Wallets` | Commissions | `appsettings.Development.json` / compose env |
+| `Partners:MaxDepth` | Partners | 10 |
+| `BackgroundJobs:ProfitEventProcessor:PollInterval` / `:BatchSize` | Commissions | `00:00:05` / 50 |
+| `BackgroundJobs:OutboxDispatcher:PollInterval` / `:BatchSize` | Commissions | `00:00:05` / 50 |
+| `BackgroundJobs:PayoutProcessor:PollInterval` / `:BatchSize` | Wallets | `00:00:15` / 50 |
+| `Logging:Console:FormatterName` | all | `simple` (or `json`) |
 
-Connection: PostgreSQL, host `127.0.0.1`, port `5432`, database `postgres`,
-user/password `app`/`app`. Enable Edit Connection -> PostgreSQL ->
-"Show all databases" to see partners/commissions/wallets in the tree.
-Tables live under `<database> -> Schemas -> public -> Tables`.
-(pgAdmin crashed with "access violation" on one dev machine — client-side
-bug, DBeaver is used instead.)
+Any key can be overridden with an environment variable, `:` becomes `__`
+(for example `BackgroundJobs__PayoutProcessor__PollInterval=00:00:03`).
+Invalid values stop the service on startup with a validation error.
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| Port 5432 is taken | a local PostgreSQL service is running; map `-p 5433:5432` for `pc-postgres` and change the port in `appsettings.Development.json` |
+| Service fails on startup: database does not exist | create the databases (Local dev, step 2) or run `docker compose down -v` so the init script runs again |
+| `docker compose build --no-cache` fails on `apt-get update` | no access to `deb.debian.org` from Docker; build without `--no-cache` to reuse the cached layer |
+| Build fails with "file is locked" | the service is running from the same `bin` folder; stop it or build with `-o <dir>` |
+| Background job does nothing on a second instance | expected: jobs are active/standby by advisory lock; enable Debug logs to see "skipping tick" |
+| pgAdmin crashes with "access violation" | client-side bug on one dev machine; use DBeaver |
